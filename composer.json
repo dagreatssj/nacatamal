@@ -1,0 +1,19 @@
+{
+    "name": "dagreatssj/nacatamal",
+    "type": "project",
+    "description": "Nacatamal is a custom deployment tool written in PHP",
+    "authors": [
+        {
+            "name": "Darrell Calderon",
+            "email": "dagreatssj@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": { "": "src/" }
+    },
+    "require": {
+        "php": ">=5.3.3",
+        "symfony/yaml": "3.0.*@dev",
+        "symfony/console": "3.0.*@dev"
+    }
+}

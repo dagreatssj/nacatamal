@@ -1,0 +1,34 @@
+projects:
+    project_name_1:
+        repository: "git@bitbucket.org:project/project.git"
+        keep_in: "/path/to/folder"
+        jenkins: false
+        workspace: "/var/lib/jenkins/workspace/project"
+        save_to: "/folder/to/save/to"
+        origin_name: "origin"
+        branch: "master"
+    project_name_2:
+        repository: "git@github.com:project/project.git"
+        keep_in: "/path/to/folder"
+        workspace: "/var/lib/jenkins/workspace/project"
+        save_to: "/folder/to/save/to"
+        origin_name: "origin"
+        branch: "master"
+
+deploy_to:
+    project_name_1:
+        server_environment:
+            server: "127.0.0.1"
+            port: "22"
+    project_name_2:
+        prod:
+            server: "example.com"
+            port: "22"
+
+post_deploy:
+    project_name:
+        run:
+            script: "/dagreatssj/scripts/release/release.php"
+
+logging:
+    log_file: "/home/vagrant/project/logs/log"
