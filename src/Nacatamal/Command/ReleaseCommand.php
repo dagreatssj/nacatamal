@@ -40,26 +40,25 @@ class ReleaseCommand extends Command {
 
             // params for project
             $repository = $projectParams["repository"];
-            $keepIn = $projectParams["keep_in"];
+            $saveReleasesDir = $projectParams["save_releases_in_dir"];
             $jenkins = $projectParams["jenkins"];
             $workspace = $projectParams["workspace"];
-            $saveTo = $projectParams["save_to"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
 
             if ($jenkins == false) {
-                $outputInterface->writeln("<comment>\nLooking for saved repository in $keepIn</comment>");
-                $check = $this->checkForExistingClonedRepository($keepIn, $package);
+                $outputInterface->writeln("<comment>\nLooking for saved repository in $saveReleasesDir</comment>");
+                $check = $this->checkForExistingClonedRepository($saveReleasesDir, $package);
                 if ($check == false) {
-                    system("cd $keepIn && git clone $repository");
+                    system("cd $saveReleasesDir && git clone $repository");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
-                    system("cd {$keepIn}/{$package} && git pull {$originName} ${branch}");
+                    system("cd {$saveReleasesDir}/{$package} && git pull {$originName} ${branch}");
                 }
 
                 $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-                system("cd {$keepIn}/{$package} && git log -1");
-                $commitNumber = exec("cd {$keepIn}/{$package} && git log --pretty=format:\"%h\" -1");
+                system("cd {$saveReleasesDir}/{$package} && git log -1");
+                $commitNumber = exec("cd {$saveReleasesDir}/{$package} && git log --pretty=format:\"%h\" -1");
             } else {
                 echo "jenkins information display here";
                 exit;
@@ -77,11 +76,11 @@ class ReleaseCommand extends Command {
             }
 
             $tarballName = "{$package}_{$commitNumber}_{$buildNumber}";
-            system("cd $keepIn && tar -cf {$tarballName}.tar $package");
-            system("cd $keepIn && gzip {$tarballName}.tar");
-            system("cd $keepIn && mv {$tarballName}.tar.gz $saveTo");
+            system("cd $saveReleasesDir && tar -cf {$tarballName}.tar $package");
+            system("cd $saveReleasesDir && gzip {$tarballName}.tar");
+            system("cd $saveReleasesDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
-            $outputInterface->writeln("<info>\nRelease Candidate created in {$saveTo}/{$tarballName}.tar.gz</info>");
+            $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
         } else if(!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
@@ -90,14 +89,20 @@ class ReleaseCommand extends Command {
             } else if ($list && empty($package)) {
                 $projects = $configParser->getProjects();
 
+                $foundProject = false;
                 foreach ($projects as $main) {
                     foreach ($main as $projectName => $params) {
                         if ($projectName == $list) {
-                            $outputInterface->writeln("<info>Displaying packages for: $list</info>");
-                        } else {
-                            throw new \RuntimeException("Project does not exist. Define one in config.yml");
+                            $foundProject = true;
+                            break;
                         }
                     }
+                }
+
+                if ($foundProject) {
+                    $outputInterface->writeln("<info>Displaying packages for: $list</info>");
+                } else {
+                    throw new \RuntimeException("Project does not exist. Define one in config.yml");
                 }
             } else if ($package) {
 
@@ -123,7 +128,7 @@ class ReleaseCommand extends Command {
         $i = 0;
         foreach ($projectNames as $pn) {
             $outputInterface->writeln("<info>Displaying packages for: $pn</info>");
-            $directoryOfReleases = $projectParams[$i]["save_to"]; //rename this to release_dir
+            $directoryOfReleases = $projectParams[$i]["save_releases_in_dir"];
 
             $collectedFiles = array();
             if ($handle = opendir($directoryOfReleases)) {
