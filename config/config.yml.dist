@@ -1,17 +1,17 @@
 projects:
     project_name_1:
         repository: "git@bitbucket.org:project/project.git"
-        keep_in: "/path/to/folder"
+        send_releases_to_dir: "/path/to/folder"
         jenkins: false
         workspace: "/var/lib/jenkins/workspace/project"
-        save_to: "/folder/to/save/to"
+        save_releases_in_dir: "/folder/to/save/to"
         origin_name: "origin"
         branch: "master"
     project_name_2:
         repository: "git@github.com:project/project.git"
-        keep_in: "/path/to/folder"
+        send_releases_to_dir: "/path/to/folder"
         workspace: "/var/lib/jenkins/workspace/project"
-        save_to: "/folder/to/save/to"
+        save_releases_in_dir: "/folder/to/save/to"
         origin_name: "origin"
         branch: "master"
 
