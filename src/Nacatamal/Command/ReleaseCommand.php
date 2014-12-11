@@ -19,7 +19,7 @@ class ReleaseCommand extends Command {
 
         $this->setName('release')
             ->setDefinition($defs)
-            ->setDescription("Display all available releases with -l or package a build.");
+            ->setDescription("Usage: --list=project for any use all and --package=project");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
@@ -29,17 +29,12 @@ class ReleaseCommand extends Command {
         $buildCountFile = __DIR__ . "/../../../config/.build";
 
         if (empty($list) && empty($package)) {
-            $this->listAll($outputInterface, $configParser);
-        } else if ($list && empty($package)) {
-            $projects = $configParser->getProjects();
-            foreach ($projects as $main) {
-                foreach ($main as $projectName => $params) {
-                    if ($projectName == $list) {
-                        $outputInterface->writeln("<info>Displaying packages for: $list</info>");
-                    }
-                }
+            throw new \RuntimeException("Use --list or --package");
+        } else if ($package && empty($list)) {
+            if (!$this->doesProjectExist($configParser, $package)) {
+                throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
             }
-        } else if ($package) {
+
             $outputInterface->writeln("<info>Packaging $package project...</info>");
             $projectParams = $configParser->getProjectParams($package);
 
@@ -52,6 +47,26 @@ class ReleaseCommand extends Command {
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
 
+            if ($jenkins == false) {
+                $outputInterface->writeln("<comment>\nLooking for saved repository in $keepIn</comment>");
+                $check = $this->checkForExistingClonedRepository($keepIn, $package);
+                if ($check == false) {
+                    system("cd $keepIn && git clone $repository");
+                } else {
+                    $outputInterface->writeln("updating repository to latest changes");
+                    system("cd {$keepIn}/{$package} && git pull {$originName} ${branch}");
+                }
+
+                $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
+                system("cd {$keepIn}/{$package} && git log -1");
+                $commitNumber = exec("cd {$keepIn}/{$package} && git log --pretty=format:\"%h\" -1");
+            } else {
+                echo "jenkins information display here";
+                exit;
+            }
+
+            $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
+
             if (!file_exists($buildCountFile)) {
                 file_put_contents($buildCountFile, 1);
                 $buildNumber = 1;
@@ -61,29 +76,34 @@ class ReleaseCommand extends Command {
                 $buildNumber = $updatedBuildNumber;
             }
 
-            $outputInterface->writeln("<comment>\nLooking for saved repository in $keepIn</comment>");
-            $check = $this->checkForExistingClonedRepository($keepIn, $package);
-            if ($check == false) {
-                system("cd $keepIn && git clone $repository");
-            } else {
-                $outputInterface->writeln("updating repository to latest changes");
-                system("cd {$keepIn}/{$package} && git pull {$originName} ${branch}");
-            }
-
-            $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-            system("cd {$keepIn}/{$package} && git log -1");
-            $commitNumber = exec("cd {$keepIn}/{$package} && git log --pretty=format:\"%h\" -1");
-
-            $outputInterface->writeln("<comment>\nCreating tarball</comment>");
             $tarballName = "{$package}_{$commitNumber}_{$buildNumber}";
-            //system("cd $keepIn && tar -cf {$tarballName}.tar $package");
-            //system("cd $keepIn && gzip {$tarballName}.tar");
-            //system("cd $keepIn && mv {$tarballName}.tar.gz $saveTo");
+            system("cd $keepIn && tar -cf {$tarballName}.tar $package");
+            system("cd $keepIn && gzip {$tarballName}.tar");
+            system("cd $keepIn && mv {$tarballName}.tar.gz $saveTo");
 
-            $outputInterface->writeln("<info>\nRelease Candidate created in {$saveTo}/{$tarballName}.tar.gz...</info>");
-
+            $outputInterface->writeln("<info>\nRelease Candidate created in {$saveTo}/{$tarballName}.tar.gz</info>");
+        } else if(!isset($list)) {
+            throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
-            throw new \RuntimeException("Must provide project name.");
+            if ($list == "all" && empty($package)) {
+                $this->listAll($outputInterface, $configParser);
+            } else if ($list && empty($package)) {
+                $projects = $configParser->getProjects();
+
+                foreach ($projects as $main) {
+                    foreach ($main as $projectName => $params) {
+                        if ($projectName == $list) {
+                            $outputInterface->writeln("<info>Displaying packages for: $list</info>");
+                        } else {
+                            throw new \RuntimeException("Project does not exist. Define one in config.yml");
+                        }
+                    }
+                }
+            } else if ($package) {
+
+            } else {
+                throw new \RuntimeException("Invalid");
+            }
         }
     }
 
@@ -149,5 +169,20 @@ class ReleaseCommand extends Command {
         ksort($reindex);
 
         return $reindex;
+    }
+
+    private function doesProjectExist(ConfigParser $configParser, $paramGiven) {
+        $projectExistance = false;
+        $projects = $configParser->getProjects();
+
+        foreach ($projects as $main) {
+            foreach ($main as $projectName => $params) {
+                if ($projectName == $paramGiven) {
+                    $projectExistance = true;
+                }
+            }
+        }
+
+        return $projectExistance;
     }
 }
