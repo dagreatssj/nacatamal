@@ -8,5 +8,5 @@ use Nacatamal\Command;
 
 $app = new Application('Nacatamal', '0.0.1');
 $app->add(new \Nacatamal\Command\DeployCommand());
-$app->add(new \Nacatamal\Command\ReleasesCommand());
+$app->add(new \Nacatamal\Command\ReleaseCommand());
 $app->run();

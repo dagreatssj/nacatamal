@@ -8,7 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ReleasesCommand extends Command {
+class ReleaseCommand extends Command {
     public function configure() {
         $defs = array(
             new InputOption('list', 'l', InputOption::VALUE_OPTIONAL,
@@ -17,9 +17,9 @@ class ReleasesCommand extends Command {
             new InputOption('commit', null, InputOption::VALUE_OPTIONAL, 'specify what committed code to package', null)
         );
 
-        $this->setName('releases')
+        $this->setName('release')
             ->setDefinition($defs)
-            ->setDescription("This will package a release candidate");
+            ->setDescription("Display all available releases with -l or package a build.");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
@@ -36,14 +36,6 @@ class ReleasesCommand extends Command {
                 foreach ($main as $projectName => $params) {
                     if ($projectName == $list) {
                         $outputInterface->writeln("<info>Displaying packages for: $list</info>");
-                        // take params and get directory files
-                        /*if ($handle = opendir($this->candidatesDir)) {
-                            while (false !== ($dir = readdir($handle))) {
-                                if ($dir != "." && $dir != "..") {
-                                    var_dump($dir);
-                                }
-                            }
-                        }*/
                     }
                 }
             }
@@ -83,7 +75,7 @@ class ReleasesCommand extends Command {
             $commitNumber = exec("cd {$keepIn}/{$package} && git log --pretty=format:\"%h\" -1");
 
             $outputInterface->writeln("<comment>\nCreating tarball</comment>");
-            $tarballName = "{$package}_{$commitNumber}_{$buildNumber}.tar";
+            $tarballName = "{$package}_{$commitNumber}_{$buildNumber}";
             //system("cd $keepIn && tar -cf {$tarballName}.tar $package");
             //system("cd $keepIn && gzip {$tarballName}.tar");
             //system("cd $keepIn && mv {$tarballName}.tar.gz $saveTo");
@@ -99,17 +91,35 @@ class ReleasesCommand extends Command {
         $outputInterface->writeln("<comment>Showing all project's Release Candidates:</comment>");
         $projects = $configParser->getProjects();
         $projectNames = array();
-        $keepIns = array();
+        $projectParams = array();
 
         foreach ($projects as $main) {
             foreach ($main as $projectName => $params) {
                 array_push($projectNames, $projectName);
-                //var_dump($params);
+                array_push($projectParams, $params);
             }
         }
 
+        $i = 0;
         foreach ($projectNames as $pn) {
             $outputInterface->writeln("<info>Displaying packages for: $pn</info>");
+            $directoryOfReleases = $projectParams[$i]["save_to"]; //rename this to release_dir
+
+            $collectedFiles = array();
+            if ($handle = opendir($directoryOfReleases)) {
+                while (false !== ($entry = readdir($handle))) {
+                    if ($entry != "." && $entry != "..") {
+                        array_push($collectedFiles, $entry);
+                    }
+                }
+            }
+
+            $collectedFiles = $this->sortByNewest($collectedFiles);
+            $collectedFiles = array_reverse($collectedFiles);
+            foreach ($collectedFiles as $key => $file) {
+                $outputInterface->writeln("- {$file}");
+            }
+            $i++;
         }
     }
 
@@ -128,4 +138,16 @@ class ReleasesCommand extends Command {
 
         return $cloneRepoExists;
     }
-} 
+
+    private function sortByNewest(&$toSort) {
+        $reindex = array();
+        foreach ($toSort as $t) {
+            preg_match("/_\d+/", $t, $output);
+            $reindex[substr($output[0],1)] = $t;
+        }
+
+        ksort($reindex);
+
+        return $reindex;
+    }
+}

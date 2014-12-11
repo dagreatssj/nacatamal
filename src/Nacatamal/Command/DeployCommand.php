@@ -10,7 +10,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DeployCommand extends Command {
     public function configure() {
         $defs = array(
-            new InputOption('build', null, InputOption::VALUE_REQUIRED, 'Build number of release candidate or use lastest keyword', null)
+            new InputOption('build', null, InputOption::VALUE_REQUIRED,
+                'Build number of release candidate or use lastest keyword', null)
         );
 
         $this->setName('deploy')
