@@ -41,13 +41,18 @@ class DeployCommand extends Command {
 
             $saveReleasesDir = $projectParams["save_releases_in_dir"];
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
+            $serverConfigurations = $configParser->getDeployTo($project, $server);
+            $deploymentString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
+            $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
             if ($build == "latest") {
                 $builds = $this->getReleaseCandidates($saveReleasesDir);
                 $builds = $this->sortByNewest($builds);
                 $builds = array_reverse($builds);
                 $deployLatestBuild = $builds[0];
+                $buildString = $deployLatestBuild;
                 $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
+                $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
             } else {
                 $builds = $this->getReleaseCandidates($saveReleasesDir);
 
@@ -61,17 +66,19 @@ class DeployCommand extends Command {
                 }
 
                 if (isset($deployThisBuild)) {
+                    $buildString = $deployThisBuild;
                     $outputInterface->writeln("<comment>Deploying build " . $deployThisBuild . " to server</comment>");
-                    $serverConfigurations = $configParser->getDeployTo($project, $server);
-
-                    $deploymentString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
                     $releaseDirectory = "{$saveReleasesDir}/{$deployThisBuild}";
-                    $outputInterface->writeln("Sending package to {$deploymentString}");
-                    system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
                 } else {
                     throw new \RuntimeException("Build Not Found");
                 }
             }
+
+            $getName = explode(".", $buildString);
+            $outputInterface->writeln("Sending package to {$deploymentString}");
+            system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
+            system("ssh -p {$serverConfigurations["port"]} {$sshString} 'tar -zxvf {$sendReleasesDir}/{$buildString} -C {$sendReleasesDir}'");
+            system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
         }
     }
 
