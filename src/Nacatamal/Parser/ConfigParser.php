@@ -37,4 +37,22 @@ class ConfigParser {
 
         return $projectParams;
     }
+
+    public function getDeployTo($projectWanted, $serverWanted) {
+        foreach ($this->configYml as $deployTo => $configurations) {
+            if ($deployTo == "deploy_to") {
+                foreach ($configurations as $projectName => $servers) {
+                    if ($projectName == $projectWanted) {
+                        foreach ($servers as $serverName => $serverParams) {
+                            if ($serverName == $serverWanted) {
+                                $grab = $serverParams;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $grab;
+    }
 } 

@@ -104,9 +104,7 @@ class ReleaseCommand extends Command {
                 } else {
                     throw new \RuntimeException("Project does not exist. Define one in config.yml");
                 }
-            } else if ($package) {
-
-            } else {
+            }else {
                 throw new \RuntimeException("Invalid");
             }
         }
