@@ -2,4 +2,4 @@
 /vendor
 /.idea
 /config/config.yml
-/config/._*
+/config/.*

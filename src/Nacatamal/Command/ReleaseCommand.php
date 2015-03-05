@@ -44,7 +44,7 @@ class ReleaseCommand extends Command {
             $workspace = $projectParams["workspace"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
-            $buildCountFile = __DIR__ . "/../../../config/._" . $package .  "_build";
+            $buildCountFile = __DIR__ . "/../../../config/.{$package}_build";
 
             if ($jenkins == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $saveReleasesDir</comment>");
