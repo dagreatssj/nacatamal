@@ -11,25 +11,24 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ReleaseCommand extends Command {
     public function configure() {
         $defs = array(
-            new InputOption('list', 'l', InputOption::VALUE_OPTIONAL,
-                "lists project's available release candidates. Use -l for all", null),
+            new InputOption('list', null, InputOption::VALUE_OPTIONAL,
+                "lists project's available release candidates. Use --list=all to show all", null),
             new InputOption('package', null, InputOption::VALUE_OPTIONAL, 'packages source code', null),
             new InputOption('commit', null, InputOption::VALUE_OPTIONAL, 'specify what committed code to package', null)
         );
 
         $this->setName('release')
             ->setDefinition($defs)
-            ->setDescription("Usage: --list=project for any use all and --package=project");
+            ->setDescription("Usage: --list=project, for any use all or use --package=project");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
         $configParser = new ConfigParser();
         $list = $inputInterface->getOption('list');
         $package = $inputInterface->getOption('package');
-        $buildCountFile = __DIR__ . "/../../../config/.build";
 
         if (empty($list) && empty($package)) {
-            throw new \RuntimeException("Use --list or --package");
+            throw new \RuntimeException("Use --list==all to see projects available");
         } else if ($package && empty($list)) {
             if (!$this->doesProjectExist($configParser, $package)) {
                 throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
@@ -45,11 +44,13 @@ class ReleaseCommand extends Command {
             $workspace = $projectParams["workspace"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
+            $buildCountFile = __DIR__ . "/../../../config/._" . $package .  "_build";
 
             if ($jenkins == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $saveReleasesDir</comment>");
                 $check = $this->checkForExistingClonedRepository($saveReleasesDir, $package);
                 if ($check == false) {
+                    $outputInterface->writeln("No repository found, cloning latest...");
                     system("cd $saveReleasesDir && git clone $repository");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
