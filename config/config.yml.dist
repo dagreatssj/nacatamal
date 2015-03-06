@@ -1,19 +1,19 @@
 projects:
     project_name_1:
         repository: "git@bitbucket.org:project/project.git"
-        send_releases_to_dir: "/path/to/folder"
         jenkins: false
         workspace: "/var/lib/jenkins/workspace/project"
-        save_releases_in_dir: "/folder/to/save/to"
         origin_name: "origin"
         branch: "master"
+        send_releases_to_dir: "/path/to/folder"
+        save_releases_in_dir: "/folder/to/save/to"
     project_name_2:
         repository: "git@github.com:project/project.git"
-        send_releases_to_dir: "/path/to/folder"
         workspace: "/var/lib/jenkins/workspace/project"
-        save_releases_in_dir: "/folder/to/save/to"
         origin_name: "origin"
         branch: "master"
+        send_releases_to_dir: "/path/to/folder"
+        save_releases_in_dir: "/folder/to/save/to"
 
 deploy_to:
     project_name_1:
@@ -25,10 +25,15 @@ deploy_to:
             server: "example.com"
             port: "22"
 
+pre_deploy:
+    project_name:
+       run:
+           script: "/path/to/some/script.php"
+
 post_deploy:
     project_name:
         run:
-            script: "/dagreatssj/scripts/release/release.php"
+            script: "/path/to/script.php"
 
 logging:
-    log_file: "/home/vagrant/project/logs/log"
+    log_file: "/nacatamal/logs/log"
