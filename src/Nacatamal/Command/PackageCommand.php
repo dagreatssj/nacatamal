@@ -7,19 +7,19 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Parser;
 
-class ReleaseCommand extends Command {
+class PackageCommand extends Command {
     public function configure() {
         $defs = array(
             new InputOption('list', null, InputOption::VALUE_OPTIONAL,
                 "lists project's available release candidates. Use --list=all to show all", null),
-            new InputOption('package', null, InputOption::VALUE_OPTIONAL, 'packages source code', null),
-            new InputOption('commit', null, InputOption::VALUE_OPTIONAL, 'specify what committed code to package', null)
+            new InputOption('package', null, InputOption::VALUE_OPTIONAL, 'packages source code', null)
         );
 
-        $this->setName('release')
+        $this->setName('package')
             ->setDefinition($defs)
-            ->setDescription("Usage: --list=project, for any use all or use --package=project");
+            ->setDescription("Creates a tarball for source code. Usage: --list=project, for any use all or use --package=project to package source code");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
@@ -28,14 +28,16 @@ class ReleaseCommand extends Command {
         $package = $inputInterface->getOption('package');
 
         if (empty($list) && empty($package)) {
-            throw new \RuntimeException("Use --list==all to see projects available");
+            throw new \RuntimeException("Use --list=all to see projects available or --list=project_name");
         } else if ($package && empty($list)) {
             if (!$this->doesProjectExist($configParser, $package)) {
                 throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
             }
 
-            $outputInterface->writeln("<info>Packaging $package project...</info>");
+            $outputInterface->writeln("<info>Creating a tarball for project: $package...</info>");
             $projectParams = $configParser->getProjectParams($package);
+            $ignoreFiles = $configParser->getIgnoreParams($package);
+            $excludePattern = $this->excludeTheseFiles($ignoreFiles);
 
             // params for project
             $repository = $projectParams["repository"];
@@ -44,25 +46,25 @@ class ReleaseCommand extends Command {
             $workspace = $projectParams["workspace"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
+            $localSavedRepositoryDir = $projectParams["local_saved_repository"];
             $buildCountFile = __DIR__ . "/../../../config/.{$package}_build";
 
             if ($jenkins == false) {
-                $outputInterface->writeln("<comment>\nLooking for saved repository in $saveReleasesDir</comment>");
-                $check = $this->checkForExistingClonedRepository($saveReleasesDir, $package);
+                $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
+                $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $package);
                 if ($check == false) {
                     $outputInterface->writeln("No repository found, cloning latest...");
-                    system("cd $saveReleasesDir && git clone $repository");
+                    system("cd $localSavedRepositoryDir && git clone $repository");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
-                    system("cd {$saveReleasesDir}/{$package} && git pull {$originName} ${branch}");
+                    system("cd {$localSavedRepositoryDir}/{$package} && git pull {$originName} ${branch}");
                 }
 
                 $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-                system("cd {$saveReleasesDir}/{$package} && git log -1");
-                $commitNumber = exec("cd {$saveReleasesDir}/{$package} && git log --pretty=format:\"%h\" -1");
+                system("cd {$localSavedRepositoryDir}/{$package} && git log -1");
+                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$package} && git log --pretty=format:\"%h\" -1");
             } else {
-                echo "jenkins information display here";
-                exit;
+                // Jenkins
             }
 
             $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
@@ -77,9 +79,10 @@ class ReleaseCommand extends Command {
             }
 
             $tarballName = "{$package}_{$commitNumber}_{$buildNumber}";
-            system("cd $saveReleasesDir && tar -cf {$tarballName}.tar $package");
-            system("cd $saveReleasesDir && gzip {$tarballName}.tar");
-            system("cd $saveReleasesDir && mv {$tarballName}.tar.gz $saveReleasesDir");
+
+            system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$package} {$excludePattern}");
+            system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
+            system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
             $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
         } else if(!isset($list)) {
@@ -188,5 +191,15 @@ class ReleaseCommand extends Command {
         }
 
         return $projectExistance;
+    }
+
+    private function excludeTheseFiles($ignoreFiles) {
+        $excludeString = "";
+
+        foreach ($ignoreFiles as $f) {
+            $excludeString .= "--exclude={$f} ";
+        }
+
+        return $excludeString;
     }
 }

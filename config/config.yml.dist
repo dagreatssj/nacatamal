@@ -15,6 +15,12 @@ projects:
         send_releases_to_dir: "/path/to/folder"
         save_releases_in_dir: "/folder/to/save/to"
 
+ignore:
+    project_name:
+        files:
+            - "name of folder"
+            - "name of file"
+
 deploy_to:
     project_name_1:
         server_environment:

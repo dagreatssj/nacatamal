@@ -38,6 +38,20 @@ class ConfigParser {
         return $projectParams;
     }
 
+    public function getIgnoreParams($project) {
+        foreach ($this->configYml as $ignoreKey => $projects) {
+            if ($ignoreKey == "ignore") {
+                foreach ($projects as $projectName => $filesInIt) {
+                    if ($projectName == $project) {
+                        foreach ($filesInIt as $files) {
+                            return $files;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public function getDeployTo($projectWanted, $serverWanted) {
         foreach ($this->configYml as $deployTo => $configurations) {
             if ($deployTo == "deploy_to") {
