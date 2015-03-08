@@ -38,6 +38,9 @@ class DeployCommand extends Command {
             throw new \RuntimeException("A build number is required.");
         } else {
             $projectParams = $configParser->getProjectParams($project);
+            $postDeployParams = $configParser->getPostDeployParams($project);
+            $runnerForScript = $postDeployParams[$project]["runner"];
+            $scriptToRun = $postDeployParams[$project]["script"];
 
             $saveReleasesDir = $projectParams["save_releases_in_dir"];
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
@@ -77,8 +80,11 @@ class DeployCommand extends Command {
             $getName = explode(".", $buildString);
             $outputInterface->writeln("Sending package to {$deploymentString}");
             system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
+            $outputInterface->writeln("<info>Unpackaging...</info>");
             system("ssh -p {$serverConfigurations["port"]} {$sshString} 'tar -zxvf {$sendReleasesDir}/{$buildString} -C {$sendReleasesDir}'");
             system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
+            $outputInterface->writeln("<info>Running post deploy script...</info>");
+            system("ssh -p {$serverConfigurations["port"]} {$sshString} '{$runnerForScript} {$sendReleasesDir}/{$getName[0]}/{$scriptToRun}'");
         }
     }
 

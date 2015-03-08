@@ -33,13 +33,13 @@ deploy_to:
 
 pre_deploy:
     project_name:
-       run:
-           script: "/path/to/some/script.php"
+       runner: "/usr/bin/php"
+       script: "/path/to/some/script.php"
 
 post_deploy:
     project_name:
-        run:
-            script: "/path/to/script.php"
+        runner: "/usr/bin/php"
+        script: "/path/to/script.php"
 
 logging:
     log_file: "/nacatamal/logs/log"
