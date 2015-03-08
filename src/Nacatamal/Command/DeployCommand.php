@@ -21,7 +21,7 @@ class DeployCommand extends Command {
 
         $this->setName('deploy')
             ->setDefinition($defs)
-            ->setDescription("Usage: --build=project or use latest to automatically create one. --project=name to choose which project and --server=serverName to choose the server to deploy to.");
+            ->setDescription("Usage: --build=number or use latest to automatically create one. --project=name to choose which project and --server=serverName to choose the server to deploy to.");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
@@ -48,8 +48,8 @@ class DeployCommand extends Command {
             if ($build == "latest") {
                 $builds = $this->getReleaseCandidates($saveReleasesDir);
                 $builds = $this->sortByNewest($builds);
-                $builds = array_reverse($builds);
-                $deployLatestBuild = $builds[0];
+                $builds = end($builds);
+                $deployLatestBuild = $builds;
                 $buildString = $deployLatestBuild;
                 $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
                 $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
@@ -99,7 +99,7 @@ class DeployCommand extends Command {
     private function sortByNewest(&$toSort) {
         $reindex = array();
         foreach ($toSort as $t) {
-            preg_match("/_\d+/", $t, $output);
+            preg_match("/_\d+\./", $t, $output);
             $reindex[substr($output[0], 1)] = $t;
         }
 
