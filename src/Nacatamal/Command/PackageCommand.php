@@ -14,29 +14,29 @@ class PackageCommand extends Command {
         $defs = array(
             new InputOption('list', null, InputOption::VALUE_OPTIONAL,
                 "lists project's available release candidates. Use --list=all to show all", null),
-            new InputOption('package', null, InputOption::VALUE_OPTIONAL, 'packages source code', null)
+            new InputOption('project', null, InputOption::VALUE_OPTIONAL, 'packages source code of a project', null)
         );
 
         $this->setName('package')
             ->setDefinition($defs)
-            ->setDescription("Creates a tarball for source code. Usage: --list=project, for any use all or use --package=project to package source code");
+            ->setDescription("Creates a tarball for source code. Usage: --list=project, for any use all or use --project=name_of_project to package source code");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
         $configParser = new ConfigParser();
         $list = $inputInterface->getOption('list');
-        $package = $inputInterface->getOption('package');
+        $project = $inputInterface->getOption('project');
 
-        if (empty($list) && empty($package)) {
-            throw new \RuntimeException("Use --list=all to see projects available or --list=project_name");
-        } else if ($package && empty($list)) {
-            if (!$this->doesProjectExist($configParser, $package)) {
+        if (empty($list) && empty($project)) {
+            throw new \RuntimeException("Use --list=all to see projects available");
+        } else if ($project && empty($list)) {
+            if (!$this->doesProjectExist($configParser, $project)) {
                 throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
             }
 
-            $outputInterface->writeln("<info>Creating a tarball for project: $package...</info>");
-            $projectParams = $configParser->getProjectParams($package);
-            $ignoreFiles = $configParser->getIgnoreParams($package);
+            $outputInterface->writeln("<info>Creating a tarball for project: $project...</info>");
+            $projectParams = $configParser->getProjectParams($project);
+            $ignoreFiles = $configParser->getIgnoreParams($project);
             $excludePattern = $this->excludeTheseFiles($ignoreFiles);
 
             // params for project
@@ -47,22 +47,22 @@ class PackageCommand extends Command {
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
             $localSavedRepositoryDir = $projectParams["local_saved_repository"];
-            $buildCountFile = __DIR__ . "/../../../config/.{$package}_build";
+            $buildCountFile = __DIR__ . "/../../../config/.{$project}_build";
 
             if ($jenkins == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
-                $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $package);
+                $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $project);
                 if ($check == false) {
                     $outputInterface->writeln("No repository found, cloning latest...");
                     system("cd $localSavedRepositoryDir && git clone $repository");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
-                    system("cd {$localSavedRepositoryDir}/{$package} && git pull {$originName} ${branch}");
+                    system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
                 }
 
                 $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-                system("cd {$localSavedRepositoryDir}/{$package} && git log -1");
-                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$package} && git log --pretty=format:\"%h\" -1");
+                system("cd {$localSavedRepositoryDir}/{$project} && git log -1");
+                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
             } else {
                 // Jenkins
             }
@@ -78,9 +78,9 @@ class PackageCommand extends Command {
                 $buildNumber = $updatedBuildNumber;
             }
 
-            $tarballName = "{$package}_{$commitNumber}_{$buildNumber}";
+            $tarballName = "{$project}_{$commitNumber}_{$buildNumber}";
 
-            system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$package} {$excludePattern}");
+            system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$project} {$excludePattern}");
             system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
             system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
@@ -88,9 +88,9 @@ class PackageCommand extends Command {
         } else if(!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
-            if ($list == "all" && empty($package)) {
+            if ($list == "all" && empty($project)) {
                 $this->listAll($outputInterface, $configParser);
-            } else if ($list && empty($package)) {
+            } else if ($list && empty($project)) {
                 $projects = $configParser->getProjects();
 
                 $foundProject = false;

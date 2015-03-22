@@ -18,16 +18,18 @@ projects:
 ignore:
     project_name:
         files:
-            - "name of folder"
-            - "name of file"
+            - "name of a folder"
+            - "name of a file"
 
 deploy_to:
     project_name_1:
         server_environment:
+            username: vagrant
             server: "127.0.0.1"
             port: "22"
     project_name_2:
         prod:
+            username: apache
             server: "example.com"
             port: "22"
 
