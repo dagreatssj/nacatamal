@@ -25,11 +25,11 @@ In order to use Nacatamal, create a config.yml and fill values like the distribu
 
 *   To package up your source code:
 
-       php nacatamal package --project=myproject
+        php nacatamal package --project=myproject
 
 *   To deploy the newest packaged code base to a server:
 
-       php nacatamal deploy --project=myproject --build=latest --server=prod
+        php nacatamal deploy --project=myproject --build=latest --server=prod
 
 What is left
 -------------
