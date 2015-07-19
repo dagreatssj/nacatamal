@@ -20,6 +20,7 @@ In the root directory, simply run the following:
 ```
 $ make install
 ```
+This will download composer and install the required dependencies.
 
 Getting Started
 ----------------
