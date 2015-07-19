@@ -16,7 +16,8 @@ To use Nacatamal you have to have php version 5.3 and up installed, and you can 
 Installation
 ------------
 
-Simply download composer, run composer install and then you will be all set to run nacatamal.
+In the root directory, simply run the following:
+    $ make install
 
 Getting Started
 ----------------

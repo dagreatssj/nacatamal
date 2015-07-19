@@ -5,3 +5,4 @@ all: install
 
 install:
 	$(CURL) -sS http://getcomposer.org/installer | $(PHP)
+	$(PHP) composer.phar install
