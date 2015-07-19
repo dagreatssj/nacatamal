@@ -17,7 +17,9 @@ Installation
 ------------
 
 In the root directory, simply run the following:
-    $ make install
+```
+$ make install
+```
 
 Getting Started
 ----------------
