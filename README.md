@@ -38,7 +38,5 @@ In order to use Nacatamal, create a config.yml and fill values like the distribu
 What is left
 -------------
 
-I haven't fully finished my tool, I plan to use it with Jenkins since I use it to control the pushes. It currently
-will run if you just install it anywhere like in your dev box. I haven't had a need to create a log file either but
-I think it might be a good idea. As of right now setting it up is a manual thing but perhaps later I will create a setup
-command.
+- Jenkins
+- Logging
