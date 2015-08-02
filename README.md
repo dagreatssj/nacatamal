@@ -30,3 +30,9 @@ In order to use Nacatamal, create a config.yml and fill values like the distribu
 *   To deploy the newest packaged code base to a server:
 
         php nacatamal deploy --project=myproject --build=latest --server=prod
+        
+## Other stuff I am considering
+
+- be able to use this with Jenkins
+- add some logging information for debug
+- add a generator for the config file
