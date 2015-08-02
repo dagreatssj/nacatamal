@@ -5,7 +5,7 @@ Nacatamal
 
 Nacatamal is a deployment tool that I created to help me launch my code to production/development servers. I decided to 
 create my own after trying Capistrano and other related tools. I found that there was too many options than what
-I needed. Thus, I created this simple tool to help me out and I thought I would share it.
+I needed and they didn't work for me. So I created this to make it simple, quick and easy for me.
 
 ## Requirements
 
