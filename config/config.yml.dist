@@ -5,14 +5,12 @@ projects:
         workspace: "/var/lib/jenkins/workspace/project"
         origin_name: "origin"
         branch: "master"
-        send_releases_to_dir: "/path/to/folder"
         save_releases_in_dir: "/folder/to/save/to"
     project_name_2:
         repository: "git@github.com:project/project.git"
         workspace: "/var/lib/jenkins/workspace/project"
         origin_name: "origin"
         branch: "master"
-        send_releases_to_dir: "/path/to/folder"
         save_releases_in_dir: "/folder/to/save/to"
 
 ignore:
@@ -43,5 +41,8 @@ post_deploy:
         runner: "/usr/bin/php"
         script: "/path/to/script.php"
 
-logging:
-    log_file: "/nacatamal/logs/log"
+clean_up:
+    project_name:
+        commands:
+            - "rm -rf /path/to/folder"
+            - "touch done.txt"

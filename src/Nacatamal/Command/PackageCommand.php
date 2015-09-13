@@ -2,12 +2,12 @@
 
 namespace Nacatamal\Command;
 
+use Nacatamal\Internals\NacatamalInternals;
 use Nacatamal\Parser\ConfigParser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Yaml\Parser;
 
 class PackageCommand extends Command {
     public function configure() {
@@ -24,11 +24,12 @@ class PackageCommand extends Command {
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
         $configParser = new ConfigParser();
+        $nacatamalInternals = new NacatamalInternals();
         $list = $inputInterface->getOption('list');
         $project = $inputInterface->getOption('project');
 
         if (empty($list) && empty($project)) {
-            throw new \RuntimeException("Use --list=all to see projects available");
+            throw new \RuntimeException("Use --list all to see projects available");
         } else if ($project && empty($list)) {
             if (!$this->doesProjectExist($configParser, $project)) {
                 throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
@@ -41,13 +42,12 @@ class PackageCommand extends Command {
 
             // params for project
             $repository = $projectParams["repository"];
-            $saveReleasesDir = $projectParams["save_releases_in_dir"];
+            $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
             $jenkins = $projectParams["jenkins"];
             $workspace = $projectParams["workspace"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
-            $localSavedRepositoryDir = $projectParams["local_saved_repository"];
-            $buildCountFile = __DIR__ . "/../../../config/.{$project}_build";
+            $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
 
             if ($jenkins == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
@@ -68,28 +68,18 @@ class PackageCommand extends Command {
             }
 
             $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
-
-            if (!file_exists($buildCountFile)) {
-                file_put_contents($buildCountFile, 1);
-                $buildNumber = 1;
-            } else {
-                $updatedBuildNumber = (int)file_get_contents($buildCountFile) + 1;
-                file_put_contents($buildCountFile, $updatedBuildNumber);
-                $buildNumber = $updatedBuildNumber;
-            }
-
-            $tarballName = "{$project}_{$commitNumber}_{$buildNumber}";
+            $tarballName = "{$project}_{$commitNumber}_" . $nacatamalInternals->getBuildCountFileNumber($project);
 
             system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$project} {$excludePattern}");
             system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
             system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
             $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
-        } else if(!isset($list)) {
+        } else if (!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
             if ($list == "all" && empty($project)) {
-                $this->listAll($outputInterface, $configParser);
+                $this->listAll($outputInterface, $configParser, $nacatamalInternals);
             } else if ($list && empty($project)) {
                 $projects = $configParser->getProjects();
 
@@ -108,13 +98,13 @@ class PackageCommand extends Command {
                 } else {
                     throw new \RuntimeException("Project does not exist. Define one in config.yml");
                 }
-            }else {
+            } else {
                 throw new \RuntimeException("Invalid");
             }
         }
     }
 
-    private function listAll(OutputInterface $outputInterface, ConfigParser $configParser) {
+    private function listAll(OutputInterface $outputInterface, ConfigParser $configParser, NacatamalInternals $nacatamalInternals) {
         $outputInterface->writeln("<comment>Showing all project's Release Candidates:</comment>");
         $projects = $configParser->getProjects();
         $projectNames = array();
@@ -130,7 +120,7 @@ class PackageCommand extends Command {
         $i = 0;
         foreach ($projectNames as $pn) {
             $outputInterface->writeln("<info>Displaying packages for: $pn</info>");
-            $directoryOfReleases = $projectParams[$i]["save_releases_in_dir"];
+            $directoryOfReleases = $nacatamalInternals->getStoreReleasesDir();
 
             $collectedFiles = array();
             if ($handle = opendir($directoryOfReleases)) {
@@ -170,7 +160,7 @@ class PackageCommand extends Command {
         $reindex = array();
         foreach ($toSort as $t) {
             preg_match("/_\d+/", $t, $output);
-            $reindex[substr($output[0],1)] = $t;
+            $reindex[substr($output[0], 1)] = $t;
         }
 
         ksort($reindex);

@@ -45,7 +45,8 @@ class DeployCommand extends Command {
             $saveReleasesDir = $projectParams["save_releases_in_dir"];
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
             $serverConfigurations = $configParser->getDeployTo($project, $server);
-            $deploymentString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
+            $deploymentString =
+                $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
             $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
             if ($build == "latest") {
@@ -54,7 +55,8 @@ class DeployCommand extends Command {
                 $builds = end($builds);
                 $deployLatestBuild = $builds;
                 $buildString = $deployLatestBuild;
-                $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
+                $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild .
+                    " to server</comment>");
                 $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
             } else {
                 $builds = $this->getReleaseCandidates($saveReleasesDir);
