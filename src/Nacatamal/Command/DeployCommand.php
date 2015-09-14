@@ -32,7 +32,11 @@ class DeployCommand extends Command {
         $project = $inputInterface->getOption('project');
         $build = $inputInterface->getOption('build');
         $server = $inputInterface->getOption('server');
+        $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
         $runAPostScript = false;
+        $projectParams = $configParser->getProjectParams($project);
+        $originName = $projectParams["origin_name"];
+        $branch = $projectParams["branch"];
 
         if (empty($project) && empty($build) && empty($server)) {
             throw new \RuntimeException("Set project, build and server arguments.");
@@ -59,18 +63,24 @@ class DeployCommand extends Command {
 
             if ($build == "latest") {
                 if (count($this->getReleaseCandidates($saveReleasesDir)) == 0) {
-                    $packageCommand = $this->getApplication()->find('package');
-                    $arguments = array(
-                        'command' => 'package',
-                        '--project' => "{$project}"
-                    );
-
-                    $packageInput = new ArrayInput($arguments);
-                    $packageCommand->run($packageInput, $outputInterface);
+                    $this->runPackageCommand($project, $outputInterface);
                 }
-                $builds = $this->getReleaseCandidates($saveReleasesDir);
-                $builds = $this->sortByNewest($builds);
-                $builds = end($builds);
+                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
+                $builds = $this->getBuildList($saveReleasesDir);
+
+                $getCommitInTar = explode("_", $builds);
+                $commitInTar = $getCommitInTar[1];
+                if ($commitInTar == $commitNumber) {
+                    $outputInterface->writeln("<comment>Checking for a newer build...</comment>");
+                    system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
+                    $checkCommitNumberAgain = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
+                    if ($commitInTar != $checkCommitNumberAgain) {
+                        $outputInterface->writeln("<comment>Newer build found, packaging...</comment>");
+                        $this->runPackageCommand($project, $outputInterface);
+                    }
+                }
+
+                $builds = $this->getBuildList($saveReleasesDir);
                 $deployLatestBuild = $builds;
                 $buildString = $deployLatestBuild;
                 $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
@@ -153,5 +163,24 @@ class DeployCommand extends Command {
             system("ssh -p {$port} {$ssh} 'if [ ! -d {$releasesDir} ]; then mkdir -p {$releasesDir}; fi;'", $exitCode);
             return true;
         }
+    }
+
+    private function runPackageCommand($project, OutputInterface $outputInterface) {
+        $packageCommand = $this->getApplication()->find('package');
+        $arguments = array(
+            'command' => 'package',
+            '--project' => "{$project}"
+        );
+
+        $packageInput = new ArrayInput($arguments);
+        $packageCommand->run($packageInput, $outputInterface);
+    }
+
+    private function getBuildList($saveReleasesDir) {
+        $builds = $this->getReleaseCandidates($saveReleasesDir);
+        $builds = $this->sortByNewest($builds);
+        $builds = end($builds);
+
+        return $builds;
     }
 }
