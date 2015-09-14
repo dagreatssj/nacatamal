@@ -73,8 +73,15 @@ class ConfigParser {
     public function getPostDeployParams($project) {
         foreach ($this->configYml as $postDeployKey => $configurations) {
             if ($postDeployKey == "post_deploy") {
-                return $configurations;
+                foreach ($configurations as $projectName => $values) {
+                    if ($projectName == $project) {
+                        $projectConfigs = array(
+                            $projectName => $values
+                        );
+                        return $projectConfigs;
+                    }
+                }
             }
         }
     }
-} 
+}

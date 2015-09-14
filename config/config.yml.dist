@@ -5,13 +5,13 @@ projects:
         workspace: "/var/lib/jenkins/workspace/project"
         origin_name: "origin"
         branch: "master"
-        save_releases_in_dir: "/folder/to/save/to"
+        send_releases_to_dir: "/folder/to/send/to"
     project_name_2:
         repository: "git@github.com:project/project.git"
         workspace: "/var/lib/jenkins/workspace/project"
         origin_name: "origin"
         branch: "master"
-        save_releases_in_dir: "/folder/to/save/to"
+        send_releases_to_dir: "/folder/to/send/to"
 
 ignore:
     project_name:
