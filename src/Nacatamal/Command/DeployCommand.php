@@ -116,7 +116,7 @@ class DeployCommand extends Command {
                 system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
                 if ($runAPostScript == true) {
                     $outputInterface->writeln("<info>Running post deploy script {$runnerForScript} {$sendReleasesDir}/{$getName[0]}/{$scriptToRun}</info>");
-                    system("ssh -t -p {$serverConfigurations["port"]} {$sshString} '{$runnerForScript} {$sendReleasesDir}/{$getName[0]}/{$scriptToRun}'");
+                    system("ssh -t -p {$serverConfigurations["port"]} {$sshString} 'cd {$sendReleasesDir}/{$getName[0]} && {$runnerForScript} {$scriptToRun}'");
                 }
             }
         }
