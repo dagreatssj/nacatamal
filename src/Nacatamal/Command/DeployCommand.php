@@ -35,6 +35,7 @@ class DeployCommand extends Command {
         $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
         $runAPostScript = false;
         $projectParams = $configParser->getProjectParams($project);
+        $postDeployParams = $configParser->getPostDeployParams($project);
         $originName = $projectParams["origin_name"];
         $branch = $projectParams["branch"];
 
@@ -47,8 +48,6 @@ class DeployCommand extends Command {
         } else if (empty($server)) {
             throw new \RuntimeException("Set the name of the server to deploy, defined in deploy_to");
         } else {
-            $projectParams = $configParser->getProjectParams($project);
-            $postDeployParams = $configParser->getPostDeployParams($project);
             if ($postDeployParams != null) {
                 $runnerForScript = $postDeployParams[$project]["runner"];
                 $scriptToRun = $postDeployParams[$project]["script"];
@@ -66,7 +65,7 @@ class DeployCommand extends Command {
                     $this->runPackageCommand($project, $outputInterface);
                 }
                 $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
-                $builds = $this->getBuildList($saveReleasesDir);
+                $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
 
                 $getCommitInTar = explode("_", $builds);
                 $commitInTar = $getCommitInTar[1];
@@ -80,7 +79,7 @@ class DeployCommand extends Command {
                     }
                 }
 
-                $builds = $this->getBuildList($saveReleasesDir);
+                $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
                 $deployLatestBuild = $builds;
                 $buildString = $deployLatestBuild;
                 $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
@@ -136,18 +135,6 @@ class DeployCommand extends Command {
         return $builds;
     }
 
-    private function sortByNewest(&$toSort) {
-        $reindex = array();
-        foreach ($toSort as $t) {
-            preg_match("/_\d+\./", $t, $output);
-            $reindex[substr($output[0], 1)] = $t;
-        }
-
-        ksort($reindex);
-
-        return $reindex;
-    }
-
     private function proceedWithDeploy(OutputInterface $outputInterface,$port, $ssh, $releasesDir, $releasesCandidate) {
         system("ssh -p {$port} {$ssh} 'if [ -d {$releasesDir} ]; then exit 2; fi;'", $dirExists);
         if ($dirExists) {
@@ -176,9 +163,9 @@ class DeployCommand extends Command {
         $packageCommand->run($packageInput, $outputInterface);
     }
 
-    private function getBuildList($saveReleasesDir) {
+    private function getBuildList($saveReleasesDir, NacatamalInternals $nacatamalInternals) {
         $builds = $this->getReleaseCandidates($saveReleasesDir);
-        $builds = $this->sortByNewest($builds);
+        $builds = $nacatamalInternals->sortByNewest($builds);
         $builds = end($builds);
 
         return $builds;

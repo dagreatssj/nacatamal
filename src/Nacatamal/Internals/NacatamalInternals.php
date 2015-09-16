@@ -11,9 +11,10 @@ class NacatamalInternals {
     protected $loggingDir;
 
     public function __construct() {
-        $this->storeReleasesDir = dirname(dirname(dirname(__DIR__))) . "/internals/releases";
-        $this->storeGitRepositoryDir = dirname(dirname(dirname(__DIR__))) . "/internals/repositories";
-        $this->loggingDir = dirname(dirname(dirname(__DIR__))) . "/internals/logging";
+        $nacatamalHome = dirname(dirname(dirname(__DIR__)));
+        $this->storeReleasesDir = $nacatamalHome . "/internals/releases";
+        $this->storeGitRepositoryDir = $nacatamalHome . "/internals/repositories";
+        $this->loggingDir = $nacatamalHome . "/internals/logging";
     }
 
     /**
@@ -33,7 +34,6 @@ class NacatamalInternals {
     public function getBuildCountFileNumber($projectName) {
         $buildCountFile = $this->loggingDir . "/{$projectName}_build";
         if (!file_exists($buildCountFile)) {
-
             file_put_contents($buildCountFile, 1);
             $buildNumber = 1;
         } else {
@@ -43,5 +43,17 @@ class NacatamalInternals {
         }
 
         return $buildNumber;
+    }
+
+    public function sortByNewest(&$toSort) {
+        $reindex = array();
+        foreach ($toSort as $t) {
+            preg_match("/_\d+/", $t, $output);
+            $reindex[substr($output[0], 1)] = $t;
+        }
+
+        ksort($reindex);
+
+        return $reindex;
     }
 } 
