@@ -29,7 +29,7 @@ class PackageCommand extends Command {
         $project = $inputInterface->getOption('project');
 
         if (empty($list) && empty($project)) {
-            throw new \RuntimeException("Use --list all to see projects available");
+            throw new \RuntimeException("Use --list=all to see projects available");
         } else if ($project && empty($list)) {
             if (!$this->doesProjectExist($configParser, $project)) {
                 throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
@@ -134,7 +134,9 @@ class PackageCommand extends Command {
             $collectedFiles = $nacatamalInternals->sortByNewest($collectedFiles);
             $collectedFiles = array_reverse($collectedFiles);
             foreach ($collectedFiles as $key => $file) {
-                $outputInterface->writeln("- {$file}");
+                if (strpos($file, $pn) !== false) {
+                    $outputInterface->writeln("-- {$file}");
+                }
             }
             $i++;
         }
