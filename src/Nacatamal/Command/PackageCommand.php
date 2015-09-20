@@ -75,6 +75,7 @@ class PackageCommand extends Command {
             system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
             $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
+            $this->cleanUpTarballs($project, $nacatamalInternals, $configParser);
         } else if (!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
@@ -104,7 +105,8 @@ class PackageCommand extends Command {
         }
     }
 
-    private function listAll(OutputInterface $outputInterface, ConfigParser $configParser, NacatamalInternals $nacatamalInternals) {
+    private function listAll(OutputInterface $outputInterface, ConfigParser $configParser,
+                             NacatamalInternals $nacatamalInternals) {
         $outputInterface->writeln("<comment>Showing all project's Release Candidates:</comment>");
         $projects = $configParser->getProjects();
         $projectNames = array();
@@ -181,5 +183,24 @@ class PackageCommand extends Command {
         }
 
         return $excludeString;
+    }
+
+    private function cleanUpTarballs($project, NacatamalInternals $nacatamalInternals, ConfigParser $configParser) {
+        $settings = $nacatamalInternals->getReleaseStoreNumber($configParser);
+        $releasesStoredInFile = $nacatamalInternals->getReleasesStoredInFile();
+
+        if ($releasesStoredInFile > (int)$settings) {
+            $files = scandir($nacatamalInternals->getStoreReleasesDir());
+            $filesInStore = array();
+
+            foreach ($files  as $f) {
+                if ($f != "." && $f != "..") {
+                    array_push($filesInStore, $f);
+                }
+            }
+
+            $filesInStore = $nacatamalInternals->sortByNewest($filesInStore);
+            unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$filesInStore[1]}");
+        }
     }
 }

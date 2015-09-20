@@ -2,19 +2,18 @@
 
 namespace Nacatamal\Internals;
 
-use Symfony\Component\Yaml\Parser;
-use Symfony\Component\Yaml\Dumper;
+use Nacatamal\Parser\ConfigParser;
 
 class NacatamalInternals {
-    protected $storeReleasesDir;
-    protected $storeGitRepositoryDir;
-    protected $loggingDir;
+    private $storeReleasesDir;
+    private $storeGitRepositoryDir;
+    private $loggingDir;
 
     public function __construct() {
         $nacatamalHome = dirname(dirname(dirname(__DIR__)));
-        $this->storeReleasesDir = $nacatamalHome . "/internals/releases";
-        $this->storeGitRepositoryDir = $nacatamalHome . "/internals/repositories";
-        $this->loggingDir = $nacatamalHome . "/internals/logging";
+        $this->storeReleasesDir = $nacatamalHome . "/.internals/releases";
+        $this->storeGitRepositoryDir = $nacatamalHome . "/.internals/repositories";
+        $this->loggingDir = $nacatamalHome . "/.internals/logging";
     }
 
     /**
@@ -55,5 +54,17 @@ class NacatamalInternals {
         ksort($reindex);
 
         return $reindex;
+    }
+
+    public function getReleaseStoreNumber(ConfigParser $configParser) {
+        $defaults = $configParser->getDefaults();
+
+        return $defaults["store_up_to"];
+    }
+
+    public function getReleasesStoredInFile() {
+        $packagedReleases = scandir($this->storeReleasesDir);
+        $countFiles = count($packagedReleases) - 2;
+        return $countFiles;
     }
 } 

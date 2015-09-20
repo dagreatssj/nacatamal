@@ -46,3 +46,9 @@ clean_up:
         commands:
             - "rm -rf /path/to/folder"
             - "touch done.txt"
+
+#
+# Defaults for Nacatamal
+#
+defaults:
+    store_up_to: 25

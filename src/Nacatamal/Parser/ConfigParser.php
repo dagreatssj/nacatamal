@@ -84,4 +84,12 @@ class ConfigParser {
             }
         }
     }
+
+    public function getDefaults() {
+        foreach ($this->configYml as $defaults => $settings) {
+            if ($defaults == "defaults") {
+                return $settings;
+            }
+        }
+    }
 }
