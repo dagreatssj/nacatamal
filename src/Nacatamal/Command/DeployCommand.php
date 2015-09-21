@@ -36,8 +36,6 @@ class DeployCommand extends Command {
         $runAPostScript = false;
         $projectParams = $configParser->getProjectParams($project);
         $postDeployParams = $configParser->getPostDeployParams($project);
-        $originName = $projectParams["origin_name"];
-        $branch = $projectParams["branch"];
 
         if (empty($project) && empty($build) && empty($server)) {
             throw new \RuntimeException("Set project, build and server arguments.");
@@ -48,6 +46,9 @@ class DeployCommand extends Command {
         } else if (empty($server)) {
             throw new \RuntimeException("Set the name of the server to deploy, defined in deploy_to");
         } else {
+            $originName = $projectParams["origin_name"];
+            $branch = $projectParams["branch"];
+
             if ($postDeployParams != null) {
                 $runnerForScript = $postDeployParams[$project]["runner"];
                 $scriptToRun = $postDeployParams[$project]["script"];
@@ -57,7 +58,8 @@ class DeployCommand extends Command {
             $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
             $serverConfigurations = $configParser->getDeployTo($project, $server);
-            $deploymentString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
+            $deploymentString =
+                $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
             $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
             if ($build == "latest") {
@@ -72,7 +74,8 @@ class DeployCommand extends Command {
                 if ($commitInTar == $commitNumber) {
                     $outputInterface->writeln("<comment>Checking for a newer build...</comment>");
                     system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
-                    $checkCommitNumberAgain = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
+                    $checkCommitNumberAgain =
+                        exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
                     if ($commitInTar != $checkCommitNumberAgain) {
                         $outputInterface->writeln("<comment>Newer build found, packaging...</comment>");
                         $this->runPackageCommand($project, $outputInterface);
@@ -82,7 +85,8 @@ class DeployCommand extends Command {
                 $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
                 $deployLatestBuild = $builds;
                 $buildString = $deployLatestBuild;
-                $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>");
+                $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild .
+                    " to server</comment>");
                 $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
             } else {
                 $builds = $this->getReleaseCandidates($saveReleasesDir);
@@ -106,7 +110,9 @@ class DeployCommand extends Command {
             }
 
             $getName = explode(".", $buildString);
-            $proceed = $this->proceedWithDeploy($outputInterface, $serverConfigurations["port"], $sshString, $sendReleasesDir, $buildString);
+            $proceed =
+                $this->proceedWithDeploy($outputInterface, $serverConfigurations["port"], $sshString, $sendReleasesDir,
+                    $buildString);
             if ($proceed) {
                 $outputInterface->writeln("Sending package to {$deploymentString}");
                 system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
@@ -135,20 +141,34 @@ class DeployCommand extends Command {
         return $builds;
     }
 
-    private function proceedWithDeploy(OutputInterface $outputInterface,$port, $ssh, $releasesDir, $releasesCandidate) {
-        system("ssh -p {$port} {$ssh} 'if [ -d {$releasesDir} ]; then exit 2; fi;'", $dirExists);
-        if ($dirExists) {
-            system("ssh -p {$port} {$ssh} 'ls {$releasesDir}/{$releasesCandidate}'", $check);
-            if ($check) {
-                return true;
+    private function proceedWithDeploy(OutputInterface $outputInterface, $port, $ssh, $releasesDir,
+                                       $releasesCandidate) {
+        $getServerParam = explode("@", $ssh);
+        $serverUrl = $getServerParam[1];
+
+        $outputInterface->writeln("<info>Checking server status...</info>");
+        exec("ping {$serverUrl}", $output, $exitCode);
+
+        if (!$exitCode) {
+            $outputInterface->writeln("<info>Server is live and ready...</info>");
+            $outputInterface->writeln("<info>... Checking existance of {$releasesDir}.</info>");
+            system("ssh -p {$port} {$ssh} 'if [ -d {$releasesDir} ]; then exit 2; fi;'", $dirExists);
+            if ($dirExists) {
+                system("ssh -p {$port} {$ssh} 'ls {$releasesDir}/{$releasesCandidate}'", $check);
+                if ($check) {
+                    return true;
+                } else {
+                    $outputInterface->writeln("<error>{$releasesCandidate} has already been uploaded.</error>");
+                    return false;
+                }
             } else {
-                $outputInterface->writeln("<error>{$releasesCandidate} has already been uploaded.</error>");
-                return false;
+                $outputInterface->writeln("<info>Creating directory to send release candidate: {$releasesDir}</info>");
+                system("ssh -p {$port} {$ssh} 'if [ ! -d {$releasesDir} ]; then mkdir -p {$releasesDir}; fi;'",
+                    $exitCode);
+                return true;
             }
         } else {
-            $outputInterface->writeln("<info>Creating directory to send release candidate: {$releasesDir}</info>");
-            system("ssh -p {$port} {$ssh} 'if [ ! -d {$releasesDir} ]; then mkdir -p {$releasesDir}; fi;'", $exitCode);
-            return true;
+            return false;
         }
     }
 

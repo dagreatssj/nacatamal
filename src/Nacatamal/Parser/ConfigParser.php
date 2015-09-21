@@ -26,6 +26,7 @@ class ConfigParser {
     }
 
     public function getProjectParams($project) {
+        $projectParams = "";
         $projects = $this->getProjects();
         foreach ($projects as $main) {
             foreach ($main as $projectName => $params) {
