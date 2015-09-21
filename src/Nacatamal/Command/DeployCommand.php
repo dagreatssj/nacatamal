@@ -14,11 +14,13 @@ class DeployCommand extends Command {
     public function configure() {
         $defs = array(
             new InputOption('project', null, InputOption::VALUE_REQUIRED,
-                'name of the project to be deployed', null),
+                'Name of project to be deployed', null),
             new InputOption('build', null, InputOption::VALUE_REQUIRED,
                 'Build number of release candidate or use lastest keyword', null),
             new InputOption('server', null, InputOption::VALUE_REQUIRED,
-                'Name of the server you want to deploy to', null)
+                'Server url you want to deploy to', null),
+            new InputOption('pass', "p", InputOption::VALUE_NONE,
+                "If set, will let exclude section files/folders in config file get packaged", null)
         );
 
         $this->setName('deploy')
@@ -32,6 +34,7 @@ class DeployCommand extends Command {
         $project = $inputInterface->getOption('project');
         $build = $inputInterface->getOption('build');
         $server = $inputInterface->getOption('server');
+        $pass = $inputInterface->getOption('pass');
         $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
         $runAPostScript = false;
         $projectParams = $configParser->getProjectParams($project);
@@ -64,7 +67,7 @@ class DeployCommand extends Command {
 
             if ($build == "latest") {
                 if (count($this->getReleaseCandidates($saveReleasesDir)) == 0) {
-                    $this->runPackageCommand($project, $outputInterface);
+                    $this->runPackageCommand($project, $outputInterface, $pass);
                 }
                 $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
                 $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
@@ -78,7 +81,7 @@ class DeployCommand extends Command {
                         exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
                     if ($commitInTar != $checkCommitNumberAgain) {
                         $outputInterface->writeln("<comment>Newer build found, packaging...</comment>");
-                        $this->runPackageCommand($project, $outputInterface);
+                        $this->runPackageCommand($project, $outputInterface, $pass);
                     }
                 }
 
@@ -172,13 +175,16 @@ class DeployCommand extends Command {
         }
     }
 
-    private function runPackageCommand($project, OutputInterface $outputInterface) {
+    private function runPackageCommand($project, OutputInterface $outputInterface, $passParam) {
         $packageCommand = $this->getApplication()->find('package');
         $arguments = array(
             'command' => 'package',
             '--project' => "{$project}"
         );
 
+        if ($passParam) {
+            $arguments = array_merge($arguments, array("--pass" => true));
+        }
         $packageInput = new ArrayInput($arguments);
         $packageCommand->run($packageInput, $outputInterface);
     }

@@ -14,7 +14,9 @@ class PackageCommand extends Command {
         $defs = array(
             new InputOption('list', null, InputOption::VALUE_OPTIONAL,
                 "lists project's available release candidates. Use --list=all to show all", null),
-            new InputOption('project', null, InputOption::VALUE_OPTIONAL, 'packages source code of a project', null)
+            new InputOption('project', null, InputOption::VALUE_OPTIONAL, 'packages source code of a project', null),
+            new InputOption('pass', "p", InputOption::VALUE_NONE,
+                "If set, will let exclude section files/folders in config file get packaged", null)
         );
 
         $this->setName('package')
@@ -27,6 +29,7 @@ class PackageCommand extends Command {
         $nacatamalInternals = new NacatamalInternals();
         $list = $inputInterface->getOption('list');
         $project = $inputInterface->getOption('project');
+        $pass = $inputInterface->getOption('pass');
 
         if (empty($list) && empty($project)) {
             throw new \RuntimeException("Use --list=all to see projects available");
@@ -37,7 +40,7 @@ class PackageCommand extends Command {
 
             $outputInterface->writeln("<info>Creating a tarball for project: $project...</info>");
             $projectParams = $configParser->getProjectParams($project);
-            $ignoreFiles = $configParser->getIgnoreParams($project);
+            $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
             $excludePattern = $this->excludeTheseFiles($ignoreFiles);
 
             // params for project

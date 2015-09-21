@@ -39,18 +39,32 @@ class ConfigParser {
         return $projectParams;
     }
 
-    public function getIgnoreParams($project) {
+    public function getIgnoreParams($project, $allowPass) {
+        $alwaysFiles = "";
+        $excludeFiles = "";
         foreach ($this->configYml as $ignoreKey => $projects) {
             if ($ignoreKey == "ignore") {
                 foreach ($projects as $projectName => $filesInIt) {
                     if ($projectName == $project) {
-                        foreach ($filesInIt as $files) {
-                            return $files;
+                        foreach ($filesInIt as $key => $value) {
+                            if ($key == "always") {
+                                $alwaysFiles = $value;
+                            } else if ($key == "exclude") {
+                                $excludeFiles = $value;
+                            }
                         }
                     }
                 }
             }
         }
+
+        if (isset($allowPass)) {
+            $ignoreFiles = $alwaysFiles;
+        } else {
+            $ignoreFiles = array_merge($alwaysFiles, $excludeFiles);
+        }
+
+        return $ignoreFiles;
     }
 
     public function getDeployTo($projectWanted, $serverWanted) {

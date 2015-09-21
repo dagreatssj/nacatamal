@@ -15,8 +15,11 @@ projects:
 
 ignore:
     project_name:
-        files:
+        always:
             - "name of a folder"
+            - "name of a file"
+        exclude:
+            - "name of folder"
             - "name of a file"
 
 deploy_to:
@@ -40,12 +43,6 @@ post_deploy:
     project_name:
         runner: "/usr/bin/php"
         script: "/path/to/script.php"
-
-clean_up:
-    project_name:
-        commands:
-            - "rm -rf /path/to/folder"
-            - "touch done.txt"
 
 #
 # Defaults for Nacatamal
