@@ -9,7 +9,7 @@ I needed and they didn't work for me. So I created this to make it simple, quick
 
 ## Requirements
 
-To use Nacatamal you have to have php version 5.3 and up installed, and you can only use git as the VCS.
+To use Nacatamal you have to have php version 5.5.9 and you can only use git as the VCS.
 
 ## Installation
 
@@ -18,6 +18,15 @@ In the root directory, simply run the following:
 $ make install
 ```
 This will download composer and install the required dependencies.
+
+**---ADDITIONALLY---**
+I have included php version 5.6.14 to be used with Nacatamal just in case no php is installed. 
+
+Simply run the following:
+
+```
+$ make php install
+```
 
 ## Getting Started
 
