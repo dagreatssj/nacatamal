@@ -1,7 +1,7 @@
 CURL=`which curl`
 PHP=`which php`
-NACATAMAL_DIR=`pwd`
-INTERNALS_BIN=$(NACATAMAL)/.internals/bin
+NACATAMAL_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+INTERNALS_BIN=$(NACATAMAL_DIR)/.internals/bin
 
 all: install
 
