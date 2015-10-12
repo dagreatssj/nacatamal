@@ -2,6 +2,7 @@ CURL=`which curl`
 PHP=`which php`
 NACATAMAL_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 INTERNALS_BIN=$(NACATAMAL_DIR)/.internals/bin
+PHP_EXTERNAL=php-5.6.14
 
 all: install
 
@@ -15,10 +16,9 @@ folders:
 	mkdir -p .internals/logging
 
 php: php-setup
-	cd $(NACATAMAL_DIR)/external && ./configure --prefix=$(INTERNALS_BIN) \
+	cd $(NACATAMAL_DIR)/external/$(PHP_EXTERNAL) && ./configure --prefix=$(INTERNALS_BIN) \
 		&& make && make install
 
 php-setup:
-	PHP_EXTERNAL=$(NACATAMAL_DIR)/external/php-5.6.14.tar.gz
-	tar -xvf $(PHP_EXTERNAL)* -C $(NACATAMAL_DIR)/external
+	cd $(NACATAMAL_DIR)/external && tar -xvf $(PHP_EXTERNAL)* -C $(NACATAMAL_DIR)/external
 	mkdir -p .internals/bin
