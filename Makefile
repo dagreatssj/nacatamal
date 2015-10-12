@@ -19,5 +19,6 @@ php: php-setup
 		&& make && make install
 
 php-setup:
-	tar -xvf $(PHP)* -C $(NACATAMAL_DIR)/external
+	PHP_EXTERNAL=$(NACATAMAL_DIR)/external/php-5.6.14.tar.gz
+	tar -xvf $(PHP_EXTERNAL)* -C $(NACATAMAL_DIR)/external
 	mkdir -p .internals/bin
