@@ -17,6 +17,8 @@ folders:
 
 install_with_php: php-setup folders
 	cd $(NACATAMAL_DIR)/external/$(PHP_EXTERNAL) && ./configure --prefix=$(INTERNALS_BIN) \
+		--with-curl \
+		--with-openssl \
 		&& make && make install
 	$(eval PHP:=$(NACATAMAL_DIR)/.internals/deps/bin/php)
 	$(CURL) -sS http://getcomposer.org/installer | $(PHP)
