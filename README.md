@@ -25,7 +25,7 @@ I have included php version 5.6.14 to be used with Nacatamal just in case no php
 Simply run the following:
 
 ```
-$ make php install
+$ make install_with_php
 ```
 
 ## Getting Started
