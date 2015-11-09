@@ -58,7 +58,7 @@ class ConfigParser {
             }
         }
 
-        if (isset($allowPass)) {
+        if (isset($allowPass) && $allowPass) {
             $ignoreFiles = $alwaysFiles;
         } else {
             $ignoreFiles = array_merge($alwaysFiles, $excludeFiles);
