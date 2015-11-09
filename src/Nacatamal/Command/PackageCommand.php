@@ -52,6 +52,8 @@ class PackageCommand extends Command {
             $branch = $projectParams["branch"];
             $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
 
+            $projectDirectory = "{$localSavedRepositoryDir}/{$project}";
+
             if ($jenkinsEnabled == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
                 $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $project);
@@ -60,15 +62,15 @@ class PackageCommand extends Command {
                     system("cd $localSavedRepositoryDir && git clone $repository");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
-                    system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
+                    system("cd {$projectDirectory} && git pull {$originName} ${branch}");
                 }
             } else {
-                $localSavedRepositoryDir = $workspace;
+                $projectDirectory = $workspace;
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-            system("cd {$localSavedRepositoryDir}/{$project} && git log -1");
-            $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
+            system("cd {$projectDirectory} && git log -1");
+            $commitNumber = exec("cd {$projectDirectory} && git log --pretty=format:\"%h\" -1");
 
             $builds = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
             $ifExists = $this->checkReleaseCandidates($builds, $commitNumber);
