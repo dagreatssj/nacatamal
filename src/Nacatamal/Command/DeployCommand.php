@@ -66,13 +66,13 @@ class DeployCommand extends Command {
             $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
             if ($build == "latest") {
-                if (count($this->getReleaseCandidates($saveReleasesDir)) == 0) {
+                if (count($nacatamalInternals->getReleaseCandidates($saveReleasesDir)) == 0) {
                     $this->runPackageCommand($project, $outputInterface, $pass);
                 }
                 $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
-                $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
+                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($saveReleasesDir);
 
-                $getCommitInTar = explode("_", $builds);
+                $getCommitInTar = explode("_", $latestBuildPackaged);
                 $commitInTar = $getCommitInTar[1];
                 if ($commitInTar == $commitNumber) {
                     $outputInterface->writeln("<comment>Checking for a newer build...</comment>");
@@ -85,16 +85,16 @@ class DeployCommand extends Command {
                     }
                 }
 
-                $builds = $this->getBuildList($saveReleasesDir, $nacatamalInternals);
-                $deployLatestBuild = $builds;
+                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($saveReleasesDir);
+                $deployLatestBuild = $latestBuildPackaged;
                 $buildString = $deployLatestBuild;
                 $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild .
                     " to server</comment>");
                 $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
             } else {
-                $builds = $this->getReleaseCandidates($saveReleasesDir);
+                $latestBuildPackaged = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
 
-                foreach ($builds as $b) {
+                foreach ($latestBuildPackaged as $b) {
                     preg_match("/_\d+/", $b, $output);
                     $candidate = substr($output[0], 1);
                     if ($candidate == $build) {
@@ -128,20 +128,6 @@ class DeployCommand extends Command {
                 }
             }
         }
-    }
-
-    private function getReleaseCandidates($saveReleasesDir) {
-        $builds = array();
-
-        if ($handle = opendir($saveReleasesDir)) {
-            while (false !== ($entry = readdir($handle))) {
-                if ($entry != "." && $entry != "..") {
-                    array_push($builds, $entry);
-                }
-            }
-        }
-
-        return $builds;
     }
 
     private function proceedWithDeploy(OutputInterface $outputInterface, $port, $ssh, $releasesDir,
@@ -187,13 +173,5 @@ class DeployCommand extends Command {
         }
         $packageInput = new ArrayInput($arguments);
         $packageCommand->run($packageInput, $outputInterface);
-    }
-
-    private function getBuildList($saveReleasesDir, NacatamalInternals $nacatamalInternals) {
-        $builds = $this->getReleaseCandidates($saveReleasesDir);
-        $builds = $nacatamalInternals->sortByNewest($builds);
-        $builds = end($builds);
-
-        return $builds;
     }
 }

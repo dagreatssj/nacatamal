@@ -47,7 +47,7 @@ class NacatamalInternals {
     public function sortByNewest(&$toSort) {
         $reindex = array();
         foreach ($toSort as $t) {
-            preg_match("/_\d+/", $t, $output);
+            preg_match("/_\d+\.tar/", $t, $output);
             $reindex[substr($output[0], 1)] = $t;
         }
 
@@ -66,5 +66,27 @@ class NacatamalInternals {
         $packagedReleases = scandir($this->storeReleasesDir);
         $countFiles = count($packagedReleases) - 2;
         return $countFiles;
+    }
+
+    public function getReleaseCandidates($saveReleasesDir) {
+        $builds = array();
+
+        if ($handle = opendir($saveReleasesDir)) {
+            while (false !== ($entry = readdir($handle))) {
+                if ($entry != "." && $entry != "..") {
+                    array_push($builds, $entry);
+                }
+            }
+        }
+
+        return $builds;
+    }
+
+    public function getLatestReleaseCandidatePackaged($saveReleasesDir) {
+        $builds = $this->getReleaseCandidates($saveReleasesDir);
+        $builds = $this->sortByNewest($builds);
+        $latest = end($builds);
+
+        return $latest;
     }
 } 

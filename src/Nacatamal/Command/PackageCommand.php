@@ -46,13 +46,13 @@ class PackageCommand extends Command {
             // params for project
             $repository = $projectParams["repository"];
             $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
-            $jenkins = $projectParams["jenkins"];
+            $jenkinsEnabled = $projectParams["jenkins"];
             $workspace = $projectParams["workspace"];
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
             $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
 
-            if ($jenkins == false) {
+            if ($jenkinsEnabled == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
                 $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $project);
                 if ($check == false) {
@@ -62,23 +62,32 @@ class PackageCommand extends Command {
                     $outputInterface->writeln("updating repository to latest changes");
                     system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
                 }
-
-                $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-                system("cd {$localSavedRepositoryDir}/{$project} && git log -1");
-                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
             } else {
-                // Jenkins
+                $rootDir = dirname(dirname(dirname(__DIR__)));
+                $testDir = "{$rootDir}/workspace";
+                $localSavedRepositoryDir = $testDir; //$workspace;
             }
 
-            $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
-            $tarballName = "{$project}_{$commitNumber}_" . $nacatamalInternals->getBuildCountFileNumber($project);
+            $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
+            system("cd {$localSavedRepositoryDir}/{$project} && git log -1");
+            $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
 
-            system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$project} {$excludePattern}");
-            system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
-            system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
+            $builds = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
+            $ifExists = $this->checkReleaseCandidates($builds, $commitNumber);
+            if ($ifExists == false) {
+                $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
+                $tarballName = "{$project}_{$commitNumber}_" . $nacatamalInternals->getBuildCountFileNumber($project);
 
-            $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
-            $this->cleanUpTarballs($project, $nacatamalInternals, $configParser);
+                system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$project} {$excludePattern}");
+                system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
+                system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
+
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
+                $this->cleanUpTarballs($project, $nacatamalInternals, $configParser);
+            } else {
+                $outputInterface->writeln("<comment>\n{$commitNumber} has been packaged...</comment>");
+                exit(3);
+            }
         } else if (!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
         } else {
@@ -205,5 +214,16 @@ class PackageCommand extends Command {
             $filesInStore = $nacatamalInternals->sortByNewest($filesInStore);
             unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$filesInStore[1]}");
         }
+    }
+
+    private function checkReleaseCandidates($builds, $commitNumber) {
+        foreach ($builds as $b) {
+            $getCommitInPackage = explode("_", $b);
+            if ($commitNumber == $getCommitInPackage[1]) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
