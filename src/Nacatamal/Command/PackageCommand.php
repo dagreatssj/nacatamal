@@ -66,6 +66,7 @@ class PackageCommand extends Command {
                 }
             } else {
                 $projectDirectory = $workspace;
+                $localSavedRepositoryDir = dirname($localSavedRepositoryDir);
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
