@@ -63,9 +63,7 @@ class PackageCommand extends Command {
                     system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
                 }
             } else {
-                $rootDir = dirname(dirname(dirname(__DIR__)));
-                $testDir = "{$rootDir}/workspace";
-                $localSavedRepositoryDir = $testDir; //$workspace;
+                $localSavedRepositoryDir = $workspace;
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
