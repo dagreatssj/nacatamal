@@ -78,6 +78,7 @@ class PackageCommand extends Command {
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
                 $tarballName = "{$project}_{$commitNumber}_" . $nacatamalInternals->getBuildCountFileNumber($project);
 
+                if ($jenkinsEnabled) $project = "workspace";
                 system("cd $localSavedRepositoryDir && tar -cf {$tarballName}.tar {$project} {$excludePattern}");
                 system("cd $localSavedRepositoryDir && gzip {$tarballName}.tar");
                 system("cd $localSavedRepositoryDir && mv {$tarballName}.tar.gz $saveReleasesDir");
