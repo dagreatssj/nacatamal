@@ -74,15 +74,13 @@ class ConfigParser {
                     if ($projectName == $projectWanted) {
                         foreach ($servers as $serverName => $serverParams) {
                             if ($serverName == $serverWanted) {
-                                $grab = $serverParams;
+                                return $serverParams;
                             }
                         }
                     }
                 }
             }
         }
-
-        return $grab;
     }
 
     public function getPostDeployParams($project) {
