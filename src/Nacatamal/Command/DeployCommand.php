@@ -104,11 +104,6 @@ class DeployCommand extends Command {
                     }
                 }
 
-                if (!isset($deployThisBuild)) {
-                    $outputInterface->writeln("<info>Build ($build) was not found.</info>");
-                    exit(3);
-                }
-
                 if (isset($deployThisBuild)) {
                     $buildString = $deployThisBuild;
                     $outputInterface->writeln("<comment>Deploying build " . $deployThisBuild . " to server</comment>");
