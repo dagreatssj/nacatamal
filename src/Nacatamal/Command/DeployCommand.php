@@ -95,12 +95,18 @@ class DeployCommand extends Command {
                 $latestBuildPackaged = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
 
                 foreach ($latestBuildPackaged as $b) {
-                    preg_match("/_\d+/", $b, $output);
-                    $candidate = substr($output[0], 1);
-                    if ($candidate == $build) {
+                    preg_match("/_\d+\.tar/", $b, $output);
+                    $getBuildNumberOff = substr($output[0], 1);
+                    $buildNumber = substr($getBuildNumberOff, 0, -4);
+                    if ($buildNumber == $build || $b == $build) {
                         $deployThisBuild = $b;
                         break;
                     }
+                }
+
+                if (!isset($deployThisBuild)) {
+                    $outputInterface->writeln("<info>Build ($build) was not found.</info>");
+                    exit(3);
                 }
 
                 if (isset($deployThisBuild)) {
