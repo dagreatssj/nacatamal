@@ -41,7 +41,10 @@ class PackageCommand extends Command {
             $outputInterface->writeln("<info>Creating a tarball for project: $project...</info>");
             $projectParams = $configParser->getProjectParams($project);
             $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
-            $excludePattern = $this->excludeTheseFiles($ignoreFiles);
+
+            if (!empty($ignoreFiles)) {
+                $excludePattern = $this->excludeTheseFiles($ignoreFiles);
+            }
 
             // params for project
             $repository = $projectParams["repository"];

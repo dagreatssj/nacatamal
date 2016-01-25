@@ -42,6 +42,8 @@ class ConfigParser {
     public function getIgnoreParams($project, $allowPass) {
         $alwaysFiles = "";
         $excludeFiles = "";
+        $ignoreFiles = "";
+        $ignoreSupplied = false;
         foreach ($this->configYml as $ignoreKey => $projects) {
             if ($ignoreKey == "ignore") {
                 foreach ($projects as $projectName => $filesInIt) {
@@ -53,16 +55,20 @@ class ConfigParser {
                                 $excludeFiles = $value;
                             }
                         }
+                        $ignoreSupplied = true;
                     }
                 }
             }
         }
 
-        if (isset($allowPass) && $allowPass) {
-            $ignoreFiles = $alwaysFiles;
-        } else {
-            $ignoreFiles = array_merge($alwaysFiles, $excludeFiles);
+        if ($ignoreSupplied) {
+            if (isset($allowPass) && $allowPass) {
+                $ignoreFiles = $alwaysFiles;
+            } else {
+                $ignoreFiles = array_merge($alwaysFiles, $excludeFiles);
+            }
         }
+
 
         return $ignoreFiles;
     }
