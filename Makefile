@@ -5,7 +5,7 @@ PHP_EXTERNAL=php-5.6.14
 
 all: install
 
-install: folders config
+install: folders config_file
 	$(eval PHP:=$(shell which php))
 	$(CURL) -sS http://getcomposer.org/installer | $(PHP)
 	$(PHP) composer.phar install
@@ -15,7 +15,7 @@ folders:
 	mkdir -p .internals/repositories
 	mkdir -p .internals/logging
 
-install_with_php: php-setup folders config
+install_with_php: php-setup folders config_file
 	cd $(NACATAMAL_DIR)/external/$(PHP_EXTERNAL) && ./configure --prefix=$(INTERNALS_BIN) \
 		--with-curl \
 		--with-openssl \
@@ -29,5 +29,7 @@ php-setup:
 	cd $(NACATAMAL_DIR)/external && tar -xvf $(PHP_EXTERNAL)* -C $(NACATAMAL_DIR)/external
 	mkdir -p .internals/deps
 
-config:
+config_file:
 	cd $(NACATAMAL_DIR)/config && cp config.yml.dist config.yml
+
+.PHONY: install install_with_php folders php-setup config_file
