@@ -31,7 +31,7 @@ class NacatamalInternals {
     }
 
     public function getBuildCountFileNumber($projectName) {
-        $buildCountFile = $this->loggingDir . "/{$projectName}_build";
+        $buildCountFile = $this->loggingDir . "/.{$projectName}_buildcount";
         if (!file_exists($buildCountFile)) {
             file_put_contents($buildCountFile, 1);
             $buildNumber = 1;
