@@ -51,6 +51,7 @@ class DeployCommand extends Command {
         } else {
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
+            $jenkinsEnabled = $projectParams["jenkins"];
 
             if ($postDeployParams != null) {
                 $runnerForScript = $postDeployParams[$project]["runner"];
@@ -118,6 +119,7 @@ class DeployCommand extends Command {
                 $this->proceedWithDeploy($outputInterface, $serverConfigurations["port"], $sshString, $sendReleasesDir,
                     $buildString);
             if ($proceed) {
+                if ($jenkinsEnabled) $project = "workspace";
                 $outputInterface->writeln("Sending package to {$deploymentString}");
                 system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
                 $outputInterface->writeln("<info>Unpackaging...</info>");
