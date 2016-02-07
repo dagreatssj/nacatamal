@@ -137,7 +137,7 @@ class DeployCommand extends Command {
         $serverUrl = $getServerParam[1];
 
         $outputInterface->writeln("<info>Checking server status...</info>");
-        exec("ping {$serverUrl}", $output, $exitCode);
+        exec("ping -c 5 {$serverUrl}", $output, $exitCode);
 
         if (!$exitCode) {
             $outputInterface->writeln("<info>Server is live and ready...</info>");
