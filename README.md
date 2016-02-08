@@ -28,6 +28,10 @@ Simply run the following:
 $ make install_with_php
 ```
 
+PHP is installed in `.internals/deps` folder and you will need to add it to your path or just add a symlink like:
+
+    cd /usr/local/bin && ln -s /path/to/php php
+
 ## Getting Started
 
 In order to use Nacatamal, create a config.yml and fill values like the distributed config.yml.
