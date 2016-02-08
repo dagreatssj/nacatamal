@@ -146,8 +146,11 @@ class DeployCommand extends Command {
             $outputInterface->writeln("<info>... Checking existance of {$releasesDir}.</info>");
             system("ssh -p {$port} {$ssh} 'if [ -d {$releasesDir} ]; then exit 2; fi;'", $dirExists);
             if ($dirExists) {
+                $outputInterface->writeln("<info>Directory {$releasesDir} exists.</info>");
+                $outputInterface->writeln("<info>Checking previously deployments...</info>");
                 system("ssh -p {$port} {$ssh} 'ls {$releasesDir}/{$releasesCandidate}'", $check);
                 if ($check) {
+                    $outputInterface->writeln("<info>{$releasesCandidate} is ready to deploy.</info>");
                     return true;
                 } else {
                     $outputInterface->writeln("<error>{$releasesCandidate} has already been uploaded.</error>");
