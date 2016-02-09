@@ -41,7 +41,7 @@ class NacatamalInternals {
             $buildNumber = $updatedBuildNumber;
         }
 
-        return $buildNumber;
+        return str_pad($buildNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function sortByNewest(&$toSort) {

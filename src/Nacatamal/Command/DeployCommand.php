@@ -13,19 +13,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 class DeployCommand extends Command {
     public function configure() {
         $defs = array(
-            new InputOption('project', null, InputOption::VALUE_REQUIRED,
-                'Name of project to be deployed', null),
-            new InputOption('build', null, InputOption::VALUE_REQUIRED,
-                'Build number of release candidate or use lastest keyword', null),
-            new InputOption('server', null, InputOption::VALUE_REQUIRED,
-                'Server url you want to deploy to', null),
-            new InputOption('pass', "p", InputOption::VALUE_NONE,
-                "If set, will let exclude section files/folders in config file get packaged", null)
+            new InputOption(
+                'project', 'p',
+                InputOption::VALUE_REQUIRED,
+                'Name of project to be deployed'
+            ),
+            new InputOption('build', 'b',
+                InputOption::VALUE_REQUIRED,
+                'Build number/Tarball name of release candidate or use latest keyword'
+            ),
+            new InputOption('server', 's',
+                InputOption::VALUE_REQUIRED,
+                'Server url you want to deploy to'
+            ),
+            new InputOption('include', 'i',
+                InputOption::VALUE_NONE,
+                "If set, exclude section will be included"
+            )
         );
 
         $this->setName('deploy')
             ->setDefinition($defs)
-            ->setDescription("Usage: --build=number or use latest to automatically create one. --project=name to choose which project and --server=serverName to choose the server to deploy to.");
+            ->setDescription("Uses SSH to send a tarball to a server.");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
@@ -34,7 +43,7 @@ class DeployCommand extends Command {
         $project = $inputInterface->getOption('project');
         $build = $inputInterface->getOption('build');
         $server = $inputInterface->getOption('server');
-        $pass = $inputInterface->getOption('pass');
+        $pass = $inputInterface->getOption('include');
         $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
         $runAPostScript = false;
         $projectParams = $configParser->getProjectParams($project);
