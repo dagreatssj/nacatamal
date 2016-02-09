@@ -62,13 +62,17 @@ class DeployCommand extends Command {
             $branch = $projectParams["branch"];
             $jenkinsEnabled = $projectParams["jenkins"];
 
+            $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
+            $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
+            $projectGitRepositoryDirName = current($inDir);
+
             if ($postDeployParams != null) {
                 $runnerForScript = $postDeployParams[$project]["runner"];
                 $scriptToRun = $postDeployParams[$project]["script"];
                 $runAPostScript = true;
             }
 
-            $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
+            $storedReleasesDir = $nacatamalInternals->getStoreReleasesDir();
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
             $serverConfigurations = $configParser->getDeployTo($project, $server);
             $deploymentString =
@@ -76,36 +80,37 @@ class DeployCommand extends Command {
             $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
             if ($build == "latest") {
-                if (count($nacatamalInternals->getReleaseCandidates($saveReleasesDir)) == 0) {
+                if (count($nacatamalInternals->getReleaseCandidates($storedReleasesDir)) == 0) {
                     $this->runPackageCommand($project, $outputInterface, $pass);
                 }
-                $commitNumber = exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
-                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($saveReleasesDir);
+                $commitNumber = exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
+                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($storedReleasesDir);
 
                 $getCommitInTar = explode("_", $latestBuildPackaged);
                 $commitInTar = $getCommitInTar[1];
                 if ($commitInTar == $commitNumber) {
                     $outputInterface->writeln("<comment>Checking for a newer build...</comment>");
-                    system("cd {$localSavedRepositoryDir}/{$project} && git pull {$originName} ${branch}");
+                    system("cd {$projectGitRepositoryDirName} && git pull {$originName} ${branch}");
                     $checkCommitNumberAgain =
-                        exec("cd {$localSavedRepositoryDir}/{$project} && git log --pretty=format:\"%h\" -1");
+                        exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
                     if ($commitInTar != $checkCommitNumberAgain) {
                         $outputInterface->writeln("<comment>Newer build found, packaging...</comment>");
                         $this->runPackageCommand($project, $outputInterface, $pass);
                     }
                 }
 
-                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($saveReleasesDir);
+                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($storedReleasesDir);
                 $deployLatestBuild = $latestBuildPackaged;
                 $buildString = $deployLatestBuild;
-                $outputInterface->writeln("<comment>Deploying latest build " . $deployLatestBuild .
-                    " to server</comment>");
-                $releaseDirectory = "{$saveReleasesDir}/{$deployLatestBuild}";
+                $outputInterface->writeln(
+                    "<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>"
+                );
+                $releaseDirectory = "{$storedReleasesDir}/{$deployLatestBuild}";
             } else {
-                $latestBuildPackaged = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
+                $latestBuildPackaged = $nacatamalInternals->getReleaseCandidates($storedReleasesDir);
 
                 foreach ($latestBuildPackaged as $b) {
-                    preg_match("/_\d+\.tar/", $b, $output);
+                    preg_match("/_\d+_/", $b, $output);
                     $getBuildNumberOff = substr($output[0], 1);
                     $buildNumber = substr($getBuildNumberOff, 0, -4);
                     if ($buildNumber == $build || $b == $build) {
@@ -117,16 +122,20 @@ class DeployCommand extends Command {
                 if (isset($deployThisBuild)) {
                     $buildString = $deployThisBuild;
                     $outputInterface->writeln("<comment>Deploying build " . $deployThisBuild . " to server</comment>");
-                    $releaseDirectory = "{$saveReleasesDir}/{$deployThisBuild}";
+                    $releaseDirectory = "{$storedReleasesDir}/{$deployThisBuild}";
                 } else {
                     throw new \RuntimeException("Build Not Found");
                 }
             }
 
             $getName = explode(".", $buildString);
-            $proceed =
-                $this->proceedWithDeploy($outputInterface, $serverConfigurations["port"], $sshString, $sendReleasesDir,
-                    $buildString);
+            $proceed = $this->proceedWithDeploy(
+                $outputInterface,
+                $serverConfigurations["port"],
+                $sshString,
+                $sendReleasesDir,
+                $buildString
+            );
             if ($proceed) {
                 if ($jenkinsEnabled) $project = "workspace";
                 $outputInterface->writeln("Sending package to {$deploymentString}");

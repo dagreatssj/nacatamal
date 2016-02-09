@@ -47,7 +47,7 @@ class NacatamalInternals {
     public function sortByNewest(&$toSort) {
         $reindex = array();
         foreach ($toSort as $t) {
-            preg_match("/_\d+\.tar/", $t, $output);
+            preg_match("/_\d+_/", $t, $output);
             $reindex[substr($output[0], 1)] = $t;
         }
 

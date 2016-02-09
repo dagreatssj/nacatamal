@@ -94,12 +94,12 @@ class PackageCommand extends Command {
                 $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
 
                 if ($jenkinsEnabled) {
-                    $projectGitRepository = "workspace";
+                    $projectGitRepositoryDirName = "workspace";
                 } else {
                     $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
-                    $projectGitRepository = current($inDir);
+                    $projectGitRepositoryDirName = current($inDir);
                 }
-                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepository} {$excludePattern}");
+                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");
                 system("cd $projectRepoDir && gzip {$tarballName}.tar");
                 system("cd $projectRepoDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
