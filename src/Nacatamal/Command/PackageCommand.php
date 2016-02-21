@@ -80,7 +80,7 @@ class PackageCommand extends Command {
                     system("cd {$projectRepoDir} && git pull {$originName} ${branch}");
                 }
             } else {
-                $projectRepoDir = dirname($workspace);
+                $projectRepoDir = $workspace;
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
