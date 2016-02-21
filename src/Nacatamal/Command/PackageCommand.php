@@ -80,12 +80,13 @@ class PackageCommand extends Command {
                     system("cd {$projectRepoDir} && git pull {$originName} ${branch}");
                 }
             } else {
-                $projectRepoDir = $workspace;
+                $projectRepoDir = dirname($workspace);
+                $projectRepoGitDir = $workspace;
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
-            system("cd {$projectRepoDir} && git log -1");
-            $commitNumber = exec("cd {$projectRepoDir} && git log --pretty=format:\"%h\" -1");
+            system("cd {$projectRepoGitDir} && git log -1");
+            $commitNumber = exec("cd {$projectRepoGitDir} && git log --pretty=format:\"%h\" -1");
 
             $builds = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
             $ifExists = $this->checkReleaseCandidates($builds, $commitNumber);
