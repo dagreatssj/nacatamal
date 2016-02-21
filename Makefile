@@ -14,6 +14,7 @@ folders:
 	mkdir -p .internals/releases
 	mkdir -p .internals/repositories
 	mkdir -p .internals/logging
+	mkdir -p .internals/tmp
 
 install_with_php: php-setup folders config_file
 	cd $(NACATAMAL_DIR)/external/$(PHP_EXTERNAL) && ./configure --prefix=$(INTERNALS_BIN) \

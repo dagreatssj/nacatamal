@@ -62,10 +62,6 @@ class DeployCommand extends Command {
             $branch = $projectParams["branch"];
             $jenkinsEnabled = $projectParams["jenkins"];
 
-            $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
-            $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
-            $projectGitRepositoryDirName = current($inDir);
-
             if ($postDeployParams != null) {
                 $runnerForScript = $postDeployParams[$project]["runner"];
                 $scriptToRun = $postDeployParams[$project]["script"];
@@ -79,7 +75,11 @@ class DeployCommand extends Command {
                 $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
             $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
 
-            if ($build == "latest") {
+            if ($build == "latest" && $jenkinsEnabled == false) {
+                $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
+                $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
+                $projectGitRepositoryDirName = current($inDir);
+
                 if (count($nacatamalInternals->getReleaseCandidates($storedReleasesDir)) == 0) {
                     $this->runPackageCommand($project, $outputInterface, $pass);
                 }
