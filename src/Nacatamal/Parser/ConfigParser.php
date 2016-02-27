@@ -89,6 +89,21 @@ class ConfigParser {
         }
     }
 
+    public function getPrePackageParams($project) {
+        foreach ($this->configYml as $prePackageKey => $configurations) {
+            if ($prePackageKey == "pre_package") {
+                foreach ($configurations as $projectName => $values) {
+                    if ($projectName == $project) {
+                        $projectConfigs = array(
+                            $projectName => $values
+                        );
+                        return $projectConfigs;
+                    }
+                }
+            }
+        }
+    }
+
     public function getPostDeployParams($project) {
         foreach ($this->configYml as $postDeployKey => $configurations) {
             if ($postDeployKey == "post_deploy") {

@@ -57,6 +57,14 @@ class PackageCommand extends Command {
                 $excludePattern = $this->excludeTheseFiles($ignoreFiles);
             }
 
+            $prePackageParams = $configParser->getPrePackageParams($project);
+
+            if ($prePackageParams != null) {
+                $runnerForScript = $prePackageParams[$project]["runner"];
+                $scriptToRun = $prePackageParams[$project]["script"];
+                $runPrePackageCommand = true;
+            }
+
             // params for project
             $repository = $projectParams["repository"];
             $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
@@ -67,6 +75,7 @@ class PackageCommand extends Command {
             $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
 
             $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
+            $projectRepoGitDir = $projectRepoDir . "/{$project}";
 
             if ($jenkinsEnabled == false) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
@@ -91,6 +100,10 @@ class PackageCommand extends Command {
             $builds = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
             $ifExists = $this->checkReleaseCandidates($builds, $commitNumber);
             if ($ifExists == false) {
+                if ($runPrePackageCommand == true) {
+                    $outputInterface->writeln("<info>Running pre package script {$runnerForScript} {$projectRepoGitDir}/{$scriptToRun}</info>");
+                    system("cd {$projectRepoGitDir} && {$runnerForScript} {$scriptToRun}'");
+                }
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
                 $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
 

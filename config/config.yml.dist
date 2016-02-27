@@ -34,7 +34,7 @@ deploy_to:
             server: "example.com"
             port: "22"
 
-pre_deploy:
+pre_package:
     project_name:
        runner: "/usr/bin/php"
        script: "/path/to/some/script.php"
