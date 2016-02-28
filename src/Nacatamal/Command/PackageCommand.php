@@ -102,7 +102,7 @@ class PackageCommand extends Command {
             if ($ifExists == false) {
                 if ($runPrePackageCommand == true) {
                     $outputInterface->writeln("<info>Running pre package script {$runnerForScript} {$projectRepoGitDir}/{$scriptToRun}</info>");
-                    system("cd {$projectRepoGitDir} && {$runnerForScript} {$scriptToRun}'");
+                    system("cd {$projectRepoGitDir} && {$runnerForScript} {$scriptToRun}");
                 }
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
                 $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
