@@ -29,7 +29,7 @@ php:
 		--enable-zip \
 		&& make && make install
 
-.PHONY
+.PHONY: run-composer
 run-composer:
 	$(eval PHP:=$(NACATAMAL_DIR)/.internals/deps/bin/php)
 	$(CURL) -sS http://getcomposer.org/installer | $(PHP)
