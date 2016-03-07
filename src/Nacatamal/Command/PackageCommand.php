@@ -118,7 +118,7 @@ class PackageCommand extends Command {
                 system("cd $projectRepoDir && mv {$tarballName}.tar.gz $saveReleasesDir");
 
                 $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
-                $this->cleanUpTarballs($nacatamalInternals, $configParser);
+                $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 $outputInterface->writeln("<comment>\n{$commitNumber} has been packaged...</comment>");
                 exit(3);
@@ -233,22 +233,16 @@ class PackageCommand extends Command {
         return $excludeString;
     }
 
-    private function cleanUpTarballs(NacatamalInternals $nacatamalInternals, ConfigParser $configParser) {
+    private function cleanUpTarballs(NacatamalInternals $nacatamalInternals,
+                                     ConfigParser $configParser,
+                                     OutputInterface $outputInterface,
+                                     $projectName) {
         $settings = $nacatamalInternals->getReleaseStoreNumber($configParser);
-        $releasesStoredInFile = $nacatamalInternals->getReleasesStoredInFile();
+        $releasesStored = $nacatamalInternals->getReleasesStored($projectName);
 
-        if ($releasesStoredInFile > (int)$settings) {
-            $files = scandir($nacatamalInternals->getStoreReleasesDir());
-            $filesInStore = array();
-
-            foreach ($files as $f) {
-                if ($f != "." && $f != "..") {
-                    array_push($filesInStore, $f);
-                }
-            }
-
-            $filesInStore = $nacatamalInternals->sortByNewest($filesInStore);
-            unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$filesInStore[1]}");
+        if (count($releasesStored) > (int)$settings) {
+            $outputInterface->writeln("<comment>\nListing all project's release candidates (tarballs)\n</comment>");
+            unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$releasesStored[0]}");
         }
     }
 

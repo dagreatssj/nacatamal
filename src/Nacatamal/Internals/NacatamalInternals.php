@@ -48,7 +48,7 @@ class NacatamalInternals {
         $reindex = array();
         foreach ($toSort as $t) {
             preg_match("/_\d+_/", $t, $output);
-            $reindex[substr($output[0], 1)] = $t;
+            $reindex[$output[0]] = $t;
         }
 
         ksort($reindex);
@@ -62,10 +62,17 @@ class NacatamalInternals {
         return $defaults["store_up_to"];
     }
 
-    public function getReleasesStoredInFile() {
+    public function getReleasesStored($projectName) {
         $packagedReleases = scandir($this->storeReleasesDir);
-        $countFiles = count($packagedReleases) - 2;
-        return $countFiles;
+        $files = array();
+
+        foreach ($packagedReleases as $pr) {
+            if (strpos($pr, $projectName) !== false) {
+                array_push($files, $pr);
+            }
+        }
+
+        return $files;
     }
 
     public function getReleaseCandidates($saveReleasesDir) {
