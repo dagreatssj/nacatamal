@@ -237,11 +237,11 @@ class PackageCommand extends Command {
                                      ConfigParser $configParser,
                                      OutputInterface $outputInterface,
                                      $projectName) {
-        $settings = $nacatamalInternals->getReleaseStoreNumber($configParser);
+        $releaseStoreNumber = $nacatamalInternals->getReleaseStoreNumber($configParser);
         $releasesStored = $nacatamalInternals->getReleasesStored($projectName);
 
-        if (count($releasesStored) > (int)$settings) {
-            $outputInterface->writeln("<comment>\nListing all project's release candidates (tarballs)\n</comment>");
+        if (count($releasesStored) > (int)$releaseStoreNumber) {
+            $outputInterface->writeln("<comment>\nStored releases capacity of {$releaseStoreNumber} has been reached, deleting earliest tarball {$releasesStored[0]}\n</comment>");
             unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$releasesStored[0]}");
         }
     }
