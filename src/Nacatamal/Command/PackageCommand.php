@@ -41,6 +41,7 @@ class PackageCommand extends Command {
         $project = $inputInterface->getOption('project');
         $pass = $inputInterface->getOption('include');
         $excludePattern = "";
+        $runPrePackageCommand = false;
 
         if (empty($list) && empty($project)) {
             throw new \RuntimeException("Use -l|--list all to see project's tarballs available");
