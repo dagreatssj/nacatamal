@@ -9,7 +9,7 @@ I needed and they didn't work for me. So I created this to make it simple, quick
 
 ## Requirements
 
-To use Nacatamal you have to have php version 5.5.9 and you can only use git as the VCS.
+To use Nacatamal you have to have PHP (5.5.9)
 
 ## Installation
 
@@ -19,22 +19,9 @@ $ make install
 ```
 This will download composer and install the required dependencies.
 
-**---ADDITIONALLY---**
-I have included php version 5.6.14 to be used with Nacatamal just in case no php is installed. 
-
-Simply run the following:
-
-```
-$ make install_with_php
-```
-
-PHP is installed in `.internals/deps` folder and you will need to add it to your path or just add a symlink like:
-
-    cd /usr/local/bin && ln -s /path/to/php php
-
 ## Getting Started
 
-In order to use Nacatamal, create a config.yml and fill values like the distributed config.yml.
+In order to use Nacatamal, edit the config.yml in the config folder.
 
 *   To package up your source code:
 
@@ -46,6 +33,5 @@ In order to use Nacatamal, create a config.yml and fill values like the distribu
         
 ## Other stuff I am considering
 
-- be able to use this with Jenkins
 - add some logging information for debug
-- add a generator for the config file
+- add a generator for the config file (similiar to Symfony's generators)
