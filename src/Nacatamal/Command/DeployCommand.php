@@ -18,21 +18,25 @@ class DeployCommand extends Command {
                 InputOption::VALUE_REQUIRED,
                 'Name of project to be deployed'
             ),
-            new InputOption('build', 'b',
+            new InputOption(
+                'build', 'b',
                 InputOption::VALUE_REQUIRED,
                 'Build number/Tarball name of release candidate or use latest keyword'
             ),
-            new InputOption('server', 's',
+            new InputOption(
+                'server', 's',
                 InputOption::VALUE_REQUIRED,
                 'Server url you want to deploy to'
             ),
-            new InputOption('include', 'i',
+            new InputOption(
+                'include', 'i',
                 InputOption::VALUE_NONE,
                 "If set, exclude section will be included"
             )
         );
 
-        $this->setName('deploy')
+        $this
+            ->setName('deploy')
             ->setDefinition($defs)
             ->setDescription("Uses SSH to send a tarball to a server.");
     }
@@ -177,7 +181,7 @@ class DeployCommand extends Command {
             } else {
                 $outputInterface->writeln("<info>Creating directory to send release candidate: {$releasesDir}</info>");
                 system("ssh -p {$port} {$ssh} 'if [ ! -d {$releasesDir} ]; then mkdir -p {$releasesDir}; fi;'",
-                    $exitCode);
+                       $exitCode);
                 return true;
             }
         } else {

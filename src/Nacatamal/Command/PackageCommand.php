@@ -29,7 +29,8 @@ class PackageCommand extends Command {
             )
         );
 
-        $this->setName('package')
+        $this
+            ->setName('package')
             ->setDefinition($defs)
             ->setDescription("Tarballs the source code.");
     }
