@@ -30,7 +30,7 @@ class PackageCommand extends Command {
         );
 
         $this
-            ->setName('package')
+            ->setName('nacatamal:package')
             ->setDefinition($defs)
             ->setDescription("Tarballs the source code.");
     }

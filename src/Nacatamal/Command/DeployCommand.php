@@ -36,7 +36,7 @@ class DeployCommand extends Command {
         );
 
         $this
-            ->setName('deploy')
+            ->setName('nacatamal:deploy')
             ->setDefinition($defs)
             ->setDescription("Uses SSH to send a tarball to a server.");
     }
