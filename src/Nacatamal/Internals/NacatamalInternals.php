@@ -11,9 +11,9 @@ class NacatamalInternals {
 
     public function __construct() {
         $nacatamalHome = dirname(dirname(dirname(__DIR__)));
-        $this->storeReleasesDir = $nacatamalHome . "/.internals/releases";
-        $this->storeGitRepositoryDir = $nacatamalHome . "/.internals/repositories";
-        $this->loggingDir = $nacatamalHome . "/.internals/logging";
+        $this->storeReleasesDir = $nacatamalHome . "/internals/releases";
+        $this->storeGitRepositoryDir = $nacatamalHome . "/internals/repositories";
+        $this->loggingDir = $nacatamalHome . "/logging";
     }
 
     /**
