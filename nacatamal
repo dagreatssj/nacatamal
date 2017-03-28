@@ -6,7 +6,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 use Symfony\Component\Console\Application;
 use Nacatamal\Command;
 
-$app = new Application('Nacatamal', '1.0.0');
+$app = new Application('Nacatamal', '2.0.0');
 $app->add(new \Nacatamal\Command\DeployCommand());
 $app->add(new \Nacatamal\Command\PackageCommand());
 $app->run();
