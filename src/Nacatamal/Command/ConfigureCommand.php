@@ -138,10 +138,7 @@ class ConfigureCommand extends Command {
             $availableProjects = $configParser->getListOfProjects();
             foreach ($availableProjects as $p) {
                 if ($project == $p) {
-                    $outputInterface->writeln(
-                        "<error>Project {$project} already exists, please choose another project name.</error>"
-                    );
-                    exit;
+                    throw new \RuntimeException("<error>Project {$project} already exists, please choose another project name.</error>");
                 }
             }
         }
