@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Yaml\Yaml;
+use Nacatamal\Parser\ConfigParser;
 
 class ConfigureCommand extends Command {
     public function configure() {
@@ -23,7 +24,7 @@ class ConfigureCommand extends Command {
                 'Set to create internals.yml file.'
             ),
             new InputOption(
-                'manual', 'm',
+                'quick', '',
                 InputOption::VALUE_NONE,
                 'Set to generate a project with blank fields and manually update them later.'
             ),
@@ -43,7 +44,7 @@ class ConfigureCommand extends Command {
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
         $project = $inputInterface->getOption('project');
         $internals = $inputInterface->getOption('internals');
-        $manual = $inputInterface->getOption('manual');
+        $manual = $inputInterface->getOption('quick');
         $duplicate = $inputInterface->getOption('duplicate');
 
         $helper = $this->getHelper('question');
@@ -55,6 +56,7 @@ class ConfigureCommand extends Command {
             $outputInterface->writeln("<comment>create internals file</comment>");
         } else {
             if (!empty($manual) && empty($duplicate)) {
+                $this->checkForDuplicateEntries($outputInterface, $project);
                 $envParams = $this->setDeployToSection($inputInterface, $outputInterface, $helper, true, false);
                 $temporaryList = $this->setTempIgnoreSection($inputInterface, $outputInterface, $helper, true, false);
                 $alwaysList = $this->setAlwaysIgnoreSection($inputInterface, $outputInterface, $helper, true, false);
@@ -73,9 +75,7 @@ class ConfigureCommand extends Command {
             } else if (!empty($manual) && !empty($duplicate)) {
                 throw new \RuntimeException("Can't set --manual and --duplicate option at the same time.");
             } else {
-                // TODO check if file already exists don't override it but write an new entry
-                // TODO check if project already exists stop input
-
+                $this->checkForDuplicateEntries($outputInterface, $project);
                 $outputInterface->writeln(
                     "<info>The following questions will generate projects.yml, text in brackets are <comment>defaults</comment>" .
                     "\nin which you can simply hit enter to continue. Hitting enter throughout the enter set of questions " .
@@ -128,6 +128,21 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['runtime_scripts']['pre_package'] = $prepackageScriptCmd;
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = $postDeployScriptCmd;
                 $this->generateProjectsYamlFile($project, $projectsYamlParams);
+            }
+        }
+    }
+
+    private function checkForDuplicateEntries(OutputInterface $outputInterface, $project) {
+        if (file_exists(__DIR__ . "/../../../config/projects.yml")) {
+            $configParser = new ConfigParser();
+            $availableProjects = $configParser->getListOfProjects();
+            foreach ($availableProjects as $p) {
+                if ($project == $p) {
+                    $outputInterface->writeln(
+                        "<error>Project {$project} already exists, please choose another project name.</error>"
+                    );
+                    exit;
+                }
             }
         }
     }
@@ -240,7 +255,7 @@ class ConfigureCommand extends Command {
 
     private function generateProjectsYamlFile($projectName, $params) {
         $yaml = Yaml::dump(array($projectName => $params), 4, 4);
-        file_put_contents(__DIR__ . "/../../../config/projects.yml", $yaml);
+        file_put_contents(__DIR__ . "/../../../config/projects.yml", $yaml, FILE_APPEND | LOCK_EX);
     }
 
     private function createInternalsYamlFile($params) {

@@ -10,7 +10,16 @@ class ConfigParser {
 
     public function __construct() {
         $this->parser = new Parser();
-        $this->configYml = $this->parser->parse(file_get_contents(__DIR__ . "/../../../config/config.yml"));
+        $this->configYml = $this->parser->parse(file_get_contents(__DIR__ . "/../../../config/projects.yml"));
+    }
+
+    public function getListOfProjects() {
+        $list = array();
+        foreach ($this->configYml as $projects => $configurations) {
+            array_push($list, $projects);
+        }
+
+        return $list;
     }
 
     public function getProjects() {
