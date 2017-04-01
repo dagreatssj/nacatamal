@@ -52,8 +52,16 @@ class ConfigureCommand extends Command {
         if (empty($project) && empty($internals)) {
             throw new \RuntimeException("Project name is required.");
         } else if (!empty($internals)) {
-            //TODO create internals file flow
-            $outputInterface->writeln("<comment>create internals file</comment>");
+            $outputInterface->writeln(
+                "<info>Created <comment>internals.yml</comment> in config folder...\n" .
+                "To change default locations simply replace the paths in the file.</info>"
+            );
+            $internalsYamlParams = array();
+            $internalsYamlParams['store_up_to'] = 20;
+            $internalsYamlParams['location_to_store_packages'] = dirname(dirname(dirname(__DIR__))) . "/internals/packages";
+            $internalsYamlParams['save_for_later_repositories'] = dirname(dirname(dirname(__DIR__))) . "/internals/saved_repositories";
+            $internalsYamlParams['logs_dir'] = dirname(dirname(dirname(__DIR__))) . "/internals/logs";
+            $this->createInternalsYamlFile($internalsYamlParams);
         } else {
             if (!empty($manual) && empty($duplicate)) {
                 $this->checkForDuplicateEntries($outputInterface, $project);
@@ -68,7 +76,7 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['ignore']['always'] = $alwaysList;
                 $projectsYamlParams['runtime_scripts']['pre_package'] = "";
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = "";
-                $this->generateProjectsYamlFile($project, $projectsYamlParams);
+                $this->createProjectsYamlFile($project, $projectsYamlParams);
             } else if (!empty($duplicate) && empty($manual)) {
                 // TODO duplicate projects
                 $outputInterface->writeln("<comment>copy an exisiting thing</comment>");
@@ -127,7 +135,7 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['ignore']['always'] = $alwaysList;
                 $projectsYamlParams['runtime_scripts']['pre_package'] = $prepackageScriptCmd;
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = $postDeployScriptCmd;
-                $this->generateProjectsYamlFile($project, $projectsYamlParams);
+                $this->createProjectsYamlFile($project, $projectsYamlParams);
             }
         }
     }
@@ -250,7 +258,7 @@ class ConfigureCommand extends Command {
         return $alwaysList;
     }
 
-    private function generateProjectsYamlFile($projectName, $params) {
+    private function createProjectsYamlFile($projectName, $params) {
         $yaml = Yaml::dump(array($projectName => $params), 4, 4);
         file_put_contents(__DIR__ . "/../../../config/projects.yml", $yaml, FILE_APPEND | LOCK_EX);
     }

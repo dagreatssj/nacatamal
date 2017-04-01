@@ -6,6 +6,7 @@ all: install
 install: folders
 	curl -sS http://getcomposer.org/installer | php
 	php composer.phar install
+	php nacatamal nacatamal:configure --internals
 
 .PHONY: folders
 folders:
