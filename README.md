@@ -21,7 +21,7 @@ This will download composer and install the required dependencies.
 
 ## Getting Started
 
-In order to use Nacatamal, edit the config.yml in the config folder.
+Before packaging or deploying your projects, please take a look at how to create your [yaml files](config/README.md).
 
 *   To package up your source code:
 

@@ -1,6 +1,7 @@
 /composer.phar
 /vendor
 /.idea
-/config/config.yml
+/config/projects.yml
+/config/internals.yml
 /config/.*
 /internals

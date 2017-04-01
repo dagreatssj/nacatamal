@@ -32,7 +32,7 @@ class PackageCommand extends Command {
         $this
             ->setName('nacatamal:package')
             ->setDefinition($defs)
-            ->setDescription("Tarballs the source code.");
+            ->setDescription("Tarballs a project's source code.");
     }
 
     public function execute(InputInterface $inputInterface, OutputInterface $outputInterface) {
