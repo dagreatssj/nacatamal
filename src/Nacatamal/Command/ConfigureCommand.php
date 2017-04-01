@@ -66,6 +66,11 @@ class ConfigureCommand extends Command {
                 $helper = $this->getHelper('question');
                 $projectsYamlParams = array();
 
+                $outputInterface->writeln(
+                    "<info>The following questions will generate projects.yml, bracket text are <comment>defaults</comment>" .
+                    " in which you can simply hit enter to continue. </info>\n"
+                );
+
                 $locationQuestion = new Question('Please enter the Git URL or Jenkins workspace directory: ');
                 $location = $helper->ask($inputInterface, $outputInterface, $locationQuestion);
 
@@ -81,8 +86,11 @@ class ConfigureCommand extends Command {
                     $branch = "master";
                 }
 
+                $outputInterface->writeln(
+                    "\n<info>For the following question you may hit enter to auto generate an environment named 'dev' with blank fields to be filled in later</info>"
+                );
                 $envParams = array();
-                $environmentNameQuestion = new Question("Enter name of environment (if left blank it will generate one named 'dev'): ");
+                $environmentNameQuestion = new Question("Enter name of environment: ");
                 $environmentName = $helper->ask($inputInterface, $outputInterface, $environmentNameQuestion);
                 $envNameSkip = false;
                 if ($environmentName == null || $environmentName == "skip") {
@@ -100,6 +108,12 @@ class ConfigureCommand extends Command {
                         $envParams[$environmentName]['send_packages_to_dir'] = "/tmp";
                     }
 
+
+                    $outputInterface->write(
+                        "\n<info>The following requires that you enter it as username ipaddress port.</info>\n" .
+                        "\t<info>e.g. ubuntu 192.168.45.150 22</info>\n" .
+                        "<info>You may skip this step by pressing <comment>enter</comment>, this will simply add the fields with blank values.</info>"
+                    );
                     $setServerOptionsQuestion = new Question("Enter the following with a space for user, ip and port (leave blank to write them in later): ");
                     $setServerOptions = $helper->ask($inputInterface, $outputInterface, $setServerOptionsQuestion);
                     if ($setServerOptions == null) {
@@ -116,7 +130,11 @@ class ConfigureCommand extends Command {
 
                 $temporaryList = array();
                 $alwaysList = array("README.md", ".git", ".gitignore");
-                $ignoreTempFileQuestion = new Question("Enter the name of a file or a folder to ignore (temporary section can be included in package command): ");
+                $outputInterface->writeln(
+                    "\n<info>Temporary section is used to ignore a list of file or folder names. Temporary means you may choose to " .
+                    "include them during package command, <comment>php nacatamal nacatamal:package --include</comment> (More details available with --help).</info>"
+                );
+                $ignoreTempFileQuestion = new Question("Enter the name of a file or a folder to ignore: ");
                 $ignoreTempFile = $helper->ask($inputInterface, $outputInterface, $ignoreTempFileQuestion);
                 if ($ignoreTempFile == null && empty($temporaryList)) {
                     array_push($temporaryList, '');
@@ -124,19 +142,27 @@ class ConfigureCommand extends Command {
                     array_push($temporaryList, "{$ignoreTempFile}");
                 }
 
-                $ignoreAlwaysFileQuestion = new Question("Enter the name of a file or folder to always ignore (always section cannot be included during package): ");
+                $outputInterface->writeln(
+                    "\n<info>Always section is where you want to add file or folder names that you never want to be included in package. </info>" .
+                    "<info>For convenience, .git, .gitignore, and README.md are already auto included.</info>"
+                );
+                $ignoreAlwaysFileQuestion = new Question("Enter the name of a file or folder to always ignore: ");
                 $ignoreAlwaysFile = $helper->ask($inputInterface, $outputInterface, $ignoreAlwaysFileQuestion);
                 if ($ignoreAlwaysFile != null) {
                     array_push($alwaysList, "{$ignoreAlwaysFile}");
                 }
 
-                $prepackageScriptCmdQuestion = new Question("Enter command to use for pre-package (e.g. /usr/bin/local/php /home/user/project/script.php): ");
+                $outputInterface->writeln(
+                    "\n<info>The following will ask to enter a command in which you want ran during <comment>nacatamal:package</comment>. " .
+                    "The next question will ask for a command in which you want ran during <comment>nacatamal:deploy</comment></info>"
+                );
+                $prepackageScriptCmdQuestion = new Question("Enter command to use for pre-package: ");
                 $prepackageScriptCmd = $helper->ask($inputInterface, $outputInterface, $prepackageScriptCmdQuestion);
                 if ($prepackageScriptCmd == null) {
                     $prepackageScriptCmd = "";
                 }
 
-                $postDeployScriptCmdQuestion = new Question("Enter command to use for post-deploy (e.g. /usr/bin/local/php /home/user/project/script.php): ");
+                $postDeployScriptCmdQuestion = new Question("Enter command to use for post-deploy: ");
                 $postDeployScriptCmd = $helper->ask($inputInterface, $outputInterface, $postDeployScriptCmdQuestion);
                 if ($postDeployScriptCmd == null) {
                     $postDeployScriptCmd = "";
