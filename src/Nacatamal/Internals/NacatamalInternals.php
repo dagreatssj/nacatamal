@@ -5,15 +5,15 @@ namespace Nacatamal\Internals;
 use Nacatamal\Parser\ConfigParser;
 
 class NacatamalInternals {
-    private $storeReleasesDir;
+    private $storePackagesDir;
     private $storeGitRepositoryDir;
-    private $loggingDir;
+    private $logsDir;
 
     public function __construct() {
         $nacatamalHome = dirname(dirname(dirname(__DIR__)));
-        $this->storeReleasesDir = $nacatamalHome . "/internals/releases";
-        $this->storeGitRepositoryDir = $nacatamalHome . "/internals/repositories";
-        $this->loggingDir = $nacatamalHome . "/logging";
+        $this->storePackagesDir = $nacatamalHome . "/internals/packages";
+        $this->storeGitRepositoryDir = $nacatamalHome . "/internals/saved_repositories";
+        $this->logsDir = $nacatamalHome . "/internals/logs";
     }
 
     /**
@@ -26,12 +26,12 @@ class NacatamalInternals {
     /**
      * @return string
      */
-    public function getStoreReleasesDir() {
-        return $this->storeReleasesDir;
+    public function getStorePackagesDir() {
+        return $this->storePackagesDir;
     }
 
     public function getBuildCountFileNumber($projectName) {
-        $buildCountFile = $this->loggingDir . "/.{$projectName}_buildcount";
+        $buildCountFile = $this->logsDir . "/.{$projectName}_buildcount";
         if (!file_exists($buildCountFile)) {
             file_put_contents($buildCountFile, 1);
             $buildNumber = 1;
@@ -56,14 +56,14 @@ class NacatamalInternals {
         return $reindex;
     }
 
-    public function getReleaseStoreNumber(ConfigParser $configParser) {
+    public function getPackageStoreNumber(ConfigParser $configParser) {
         $defaults = $configParser->getDefaults();
 
         return $defaults["store_up_to"];
     }
 
-    public function getReleasesStored($projectName) {
-        $packagedReleases = scandir($this->storeReleasesDir);
+    public function getPackagesStored($projectName) {
+        $packagedReleases = scandir($this->storePackagesDir);
         $files = array();
 
         foreach ($packagedReleases as $pr) {
@@ -75,7 +75,7 @@ class NacatamalInternals {
         return $files;
     }
 
-    public function getReleaseCandidates($saveReleasesDir) {
+    public function getPackageCandidates($saveReleasesDir) {
         $builds = array();
 
         if ($handle = opendir($saveReleasesDir)) {
@@ -90,7 +90,7 @@ class NacatamalInternals {
     }
 
     public function getLatestReleaseCandidatePackaged($saveReleasesDir) {
-        $builds = $this->getReleaseCandidates($saveReleasesDir);
+        $builds = $this->getPackageCandidates($saveReleasesDir);
         $builds = $this->sortByNewest($builds);
         $latest = end($builds);
 

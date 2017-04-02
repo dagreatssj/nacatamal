@@ -72,7 +72,7 @@ class DeployCommand extends Command {
                 $runAPostScript = true;
             }
 
-            $storedReleasesDir = $nacatamalInternals->getStoreReleasesDir();
+            $storedReleasesDir = $nacatamalInternals->getStorePackagesDir();
             $sendReleasesDir = $projectParams["send_releases_to_dir"];
             $serverConfigurations = $configParser->getDeployTo($project, $server);
             $deploymentString =
@@ -84,7 +84,7 @@ class DeployCommand extends Command {
                 $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
                 $projectGitRepositoryDirName = current($inDir);
 
-                if (count($nacatamalInternals->getReleaseCandidates($storedReleasesDir)) == 0) {
+                if (count($nacatamalInternals->getPackageCandidates($storedReleasesDir)) == 0) {
                     $this->runPackageCommand($project, $outputInterface, $pass);
                 }
                 $commitNumber = exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
@@ -111,7 +111,7 @@ class DeployCommand extends Command {
                 );
                 $releaseDirectory = "{$storedReleasesDir}/{$deployLatestBuild}";
             } else {
-                $latestBuildPackaged = $nacatamalInternals->getReleaseCandidates($storedReleasesDir);
+                $latestBuildPackaged = $nacatamalInternals->getPackageCandidates($storedReleasesDir);
 
                 foreach ($latestBuildPackaged as $b) {
                     preg_match("/_\d+_/", $b, $output);

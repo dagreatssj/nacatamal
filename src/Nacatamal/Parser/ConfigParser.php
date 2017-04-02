@@ -7,10 +7,12 @@ use Symfony\Component\Yaml\Parser;
 class ConfigParser {
     private $parser;
     private $configYml;
+    private $internalsYml;
 
     public function __construct() {
         $this->parser = new Parser();
         $this->configYml = $this->parser->parse(file_get_contents(__DIR__ . "/../../../config/projects.yml"));
+        $this->internalsYml = $this->parser->parse(file_get_contents(__DIR__ . "/../../../config/internals.yml"));
     }
 
     public function getListOfProjects() {
@@ -20,18 +22,6 @@ class ConfigParser {
         }
 
         return $list;
-    }
-
-    public function getProjects() {
-        $grab = array();
-
-        foreach ($this->configYml as $projects => $configurations) {
-            if ($projects == "projects") {
-                array_push($grab, $configurations);
-            }
-        }
-
-        return $grab;
     }
 
     public function getProjectParams($project) {
@@ -46,37 +36,14 @@ class ConfigParser {
     }
 
     public function getIgnoreParams($project, $allowPass) {
-        $alwaysFiles = "";
-        $excludeFiles = "";
-        $ignoreFiles = "";
-        $ignoreSupplied = false;
-        foreach ($this->configYml as $ignoreKey => $projects) {
-            if ($ignoreKey == "ignore") {
-                foreach ($projects as $projectName => $filesInIt) {
-                    if ($projectName == $project) {
-                        foreach ($filesInIt as $key => $value) {
-                            if ($key == "always") {
-                                $alwaysFiles = $value;
-                            } else if ($key == "exclude") {
-                                $excludeFiles = $value;
-                            }
-                        }
-                        $ignoreSupplied = true;
-                    }
-                }
-            }
+        $temporaryFiles = $this->configYml[$project]['ignore']['temporary'];
+        $alwaysFiles = $this->configYml[$project]['ignore']['always'];
+
+        if (isset($allowPass) && $allowPass) {
+            return $alwaysFiles;
+        } else {
+            return array_merge($alwaysFiles, $temporaryFiles);
         }
-
-        if ($ignoreSupplied) {
-            if (isset($allowPass) && $allowPass) {
-                $ignoreFiles = $alwaysFiles;
-            } else {
-                $ignoreFiles = array_merge($alwaysFiles, $excludeFiles);
-            }
-        }
-
-
-        return $ignoreFiles;
     }
 
     public function getDeployTo($projectWanted, $serverWanted) {
@@ -96,40 +63,14 @@ class ConfigParser {
     }
 
     public function getPrePackageParams($project) {
-        foreach ($this->configYml as $prePackageKey => $configurations) {
-            if ($prePackageKey == "pre_package") {
-                foreach ($configurations as $projectName => $values) {
-                    if ($projectName == $project) {
-                        $projectConfigs = array(
-                            $projectName => $values
-                        );
-                        return $projectConfigs;
-                    }
-                }
-            }
-        }
+        return $this->configYml[$project]['runtime_scripts']['pre_package'];
     }
 
     public function getPostDeployParams($project) {
-        foreach ($this->configYml as $postDeployKey => $configurations) {
-            if ($postDeployKey == "post_deploy") {
-                foreach ($configurations as $projectName => $values) {
-                    if ($projectName == $project) {
-                        $projectConfigs = array(
-                            $projectName => $values
-                        );
-                        return $projectConfigs;
-                    }
-                }
-            }
-        }
+        return $this->configYml[$project]['runtime_scripts']['post_deploy'];
     }
 
     public function getDefaults() {
-        foreach ($this->configYml as $defaults => $settings) {
-            if ($defaults == "defaults") {
-                return $settings;
-            }
-        }
+        return $this->internalsYml;
     }
 }

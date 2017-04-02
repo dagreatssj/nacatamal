@@ -48,7 +48,7 @@ class PackageCommand extends Command {
             throw new \RuntimeException("Use -l|--list all to see project's tarballs available");
         } else if ($project && empty($list)) {
             if (!$this->doesProjectExist($configParser, $project)) {
-                throw new \RuntimeException("Project name given does not exist. Please define one in config.yml");
+                throw new \RuntimeException("Project name given does not exist. Please use nacatamal:configure to define one.");
             }
 
             $outputInterface->writeln("<info>Creating a tarball for project: $project...</info>");
@@ -59,19 +59,16 @@ class PackageCommand extends Command {
                 $excludePattern = $this->excludeTheseFiles($ignoreFiles);
             }
 
-            $prePackageParams = $configParser->getPrePackageParams($project);
+            $prePackageCmd = $configParser->getPrePackageParams($project);
 
-            if ($prePackageParams != null) {
-                $runnerForScript = $prePackageParams[$project]["runner"];
-                $scriptToRun = $prePackageParams[$project]["script"];
+            if (!empty($prePackageCmd)) {
                 $runPrePackageCommand = true;
             }
 
             // params for project
-            $repository = $projectParams["repository"];
-            $saveReleasesDir = $nacatamalInternals->getStoreReleasesDir();
-            $jenkinsEnabled = $projectParams["jenkins"];
-            $workspace = $projectParams["workspace"];
+            $location = $projectParams["location"];
+            $jenkins = preg_match('/git/', $location, $matches);
+            $saveReleasesDir = $nacatamalInternals->getStorePackagesDir();
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
             $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
@@ -79,37 +76,37 @@ class PackageCommand extends Command {
             $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
             $projectRepoGitDir = $projectRepoDir . "/{$project}";
 
-            if ($jenkinsEnabled == false) {
+            if ($jenkins == 1) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
                 $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $project);
                 if ($check == false) {
                     $outputInterface->writeln("No repository found, cloning latest...");
                     system("mkdir -p $projectRepoDir");
-                    system("cd $projectRepoDir && git clone $repository");
+                    system("cd $projectRepoDir && git clone $location $project");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
                     system("cd {$projectRepoDir} && git pull {$originName} ${branch}");
                 }
             } else {
-                $projectRepoDir = dirname($workspace);
-                $projectRepoGitDir = $workspace;
+                $projectRepoDir = dirname($location);
+                $projectRepoGitDir = $location;
             }
 
             $outputInterface->writeln("<comment>\nDisplaying Git changes</comment>");
             system("cd {$projectRepoGitDir} && git log -1");
             $commitNumber = exec("cd {$projectRepoGitDir} && git log --pretty=format:\"%h\" -1");
 
-            $builds = $nacatamalInternals->getReleaseCandidates($saveReleasesDir);
-            $ifExists = $this->checkReleaseCandidates($builds, $commitNumber);
+            $packageList = $nacatamalInternals->getPackageCandidates($saveReleasesDir);
+            $ifExists = $this->checkForExistingPackages($packageList, $commitNumber);
             if ($ifExists == false) {
                 if ($runPrePackageCommand == true) {
-                    $outputInterface->writeln("<info>Running pre package script {$runnerForScript} {$projectRepoGitDir}/{$scriptToRun}</info>");
-                    system("cd {$projectRepoGitDir} && {$runnerForScript} {$scriptToRun}");
+                    $outputInterface->writeln("<info>Running pre package script {$prePackageCmd}</info>");
+                    system("cd {$projectRepoGitDir} && {$prePackageCmd}");
                 }
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
                 $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
 
-                if ($jenkinsEnabled) {
+                if ($jenkins == 0) {
                     $projectGitRepositoryDirName = "workspace";
                 } else {
                     $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
@@ -122,8 +119,7 @@ class PackageCommand extends Command {
                 $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
-                $outputInterface->writeln("<comment>\n{$commitNumber} has been packaged...</comment>");
-                exit(3);
+                throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");
             }
         } else if (!isset($list)) {
             throw new \RuntimeException("Use --list=all to show all or use project name to specify");
@@ -131,22 +127,20 @@ class PackageCommand extends Command {
             if ($list == "all" && empty($project)) {
                 $this->listAll($outputInterface, $configParser, $nacatamalInternals);
             } else if ($list && empty($project)) {
-                $projects = $configParser->getProjects();
+                $projects = $configParser->getListOfProjects();
 
                 $foundProject = false;
-                foreach ($projects as $main) {
-                    foreach ($main as $projectName => $params) {
-                        if ($projectName == $list) {
-                            $foundProject = true;
-                            break;
-                        }
+                foreach ($projects as $projectName) {
+                    if ($projectName == $list) {
+                        $foundProject = true;
+                        break;
                     }
                 }
 
                 if ($foundProject) {
                     $outputInterface->writeln("<info>Displaying packages for: $list</info>");
                 } else {
-                    throw new \RuntimeException("Project does not exist. Define one in config.yml");
+                    throw new \RuntimeException("Project does not exist.  Please use nacatamal:configure to define one.");
                 }
             } else {
                 throw new \RuntimeException("Invalid");
@@ -158,21 +152,12 @@ class PackageCommand extends Command {
                              ConfigParser $configParser,
                              NacatamalInternals $nacatamalInternals) {
         $outputInterface->writeln("<comment>\nListing all project's release candidates (tarballs)\n</comment>");
-        $projects = $configParser->getProjects();
-        $projectNames = array();
-        $projectParams = array();
-
-        foreach ($projects as $main) {
-            foreach ($main as $projectName => $params) {
-                array_push($projectNames, $projectName);
-                array_push($projectParams, $params);
-            }
-        }
+        $projectNames = $configParser->getListOfProjects();
 
         $i = 0;
         foreach ($projectNames as $pn) {
             $outputInterface->writeln("<info>$pn</info>");
-            $directoryOfReleases = $nacatamalInternals->getStoreReleasesDir();
+            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir();
 
             $collectedFiles = array();
             if ($handle = opendir($directoryOfReleases)) {
@@ -212,13 +197,11 @@ class PackageCommand extends Command {
 
     private function doesProjectExist(ConfigParser $configParser, $paramGiven) {
         $projectExistance = false;
-        $projects = $configParser->getProjects();
+        $projects = $configParser->getListOfProjects();
 
-        foreach ($projects as $main) {
-            foreach ($main as $projectName => $params) {
-                if ($projectName == $paramGiven) {
-                    $projectExistance = true;
-                }
+        foreach ($projects as $p) {
+            if ($p == $paramGiven) {
+                $projectExistance = true;
             }
         }
 
@@ -239,19 +222,20 @@ class PackageCommand extends Command {
                                      ConfigParser $configParser,
                                      OutputInterface $outputInterface,
                                      $projectName) {
-        $releaseStoreNumber = $nacatamalInternals->getReleaseStoreNumber($configParser);
-        $releasesStored = $nacatamalInternals->getReleasesStored($projectName);
+        $packageStoreNumber = $nacatamalInternals->getPackageStoreNumber($configParser);
+        $packagesStored = $nacatamalInternals->getPackagesStored($projectName);
 
-        if (count($releasesStored) > (int)$releaseStoreNumber) {
-            $outputInterface->writeln("<comment>\nStored releases capacity of {$releaseStoreNumber} has been reached, deleting earliest tarball {$releasesStored[0]}\n</comment>");
-            unlink("{$nacatamalInternals->getStoreReleasesDir()}/{$releasesStored[0]}");
+        if (count($packagesStored) > (int)$packageStoreNumber) {
+            $outputInterface->writeln("<comment>\nStored packages capacity of {$packageStoreNumber} has been reached, deleting earliest tarball {$packagesStored[0]}\n</comment>");
+            unlink("{$nacatamalInternals->getStorePackagesDir()}/{$packagesStored[0]}");
         }
     }
 
-    private function checkReleaseCandidates($builds, $commitNumber) {
+    private function checkForExistingPackages($builds, $commitNumber) {
         foreach ($builds as $b) {
             $getCommitInPackage = explode("_", $b);
-            if ($commitNumber == $getCommitInPackage[1]) {
+            $removeTarExtension = explode(".", $getCommitInPackage[2]);
+            if ($commitNumber == $removeTarExtension[0]) {
                 return true;
             }
         }
