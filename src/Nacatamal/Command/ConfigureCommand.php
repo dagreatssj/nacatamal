@@ -29,9 +29,9 @@ class ConfigureCommand extends Command {
                 'Set to generate a project with blank fields and manually update them later.'
             ),
             new InputOption(
-                'duplicate', 'd',
+                'copy_from', 'c',
                 InputOption::VALUE_REQUIRED,
-                'Add the name of an existing project to duplicate.'
+                'Add the name of an existing project to copy from.'
             )
         );
 
@@ -45,7 +45,7 @@ class ConfigureCommand extends Command {
         $project = $inputInterface->getOption('project');
         $internals = $inputInterface->getOption('internals');
         $manual = $inputInterface->getOption('quick');
-        $duplicate = $inputInterface->getOption('duplicate');
+        $copyFrom = $inputInterface->getOption('copy_from');
 
         $helper = $this->getHelper('question');
         $projectsYamlParams = array();
@@ -63,7 +63,7 @@ class ConfigureCommand extends Command {
             $internalsYamlParams['logs_dir'] = dirname(dirname(dirname(__DIR__))) . "/internals/logs";
             $this->createInternalsYamlFile($internalsYamlParams);
         } else {
-            if (!empty($manual) && empty($duplicate)) {
+            if (!empty($manual) && empty($copyFrom)) {
                 $this->checkForDuplicateEntries($outputInterface, $project);
                 $envParams = $this->setDeployToSection($inputInterface, $outputInterface, $helper, true, false);
                 $temporaryList = $this->setTempIgnoreSection($inputInterface, $outputInterface, $helper, true, false);
@@ -77,10 +77,12 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['runtime_scripts']['pre_package'] = "";
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = "";
                 $this->createProjectsYamlFile($project, $projectsYamlParams);
-            } else if (!empty($duplicate) && empty($manual)) {
-                // TODO duplicate projects
-                $outputInterface->writeln("<comment>copy an exisiting thing</comment>");
-            } else if (!empty($manual) && !empty($duplicate)) {
+            } else if (!empty($copyFrom) && empty($manual)) {
+                $this->checkForDuplicateEntries($outputInterface, $project);
+                $configParser = new ConfigParser();
+                $projectParams = $configParser->getProjectParams($copyFrom);
+                $this->createProjectsYamlFile($project, $projectParams);
+            } else if (!empty($manual) && !empty($copyFrom)) {
                 throw new \RuntimeException("Can't set --manual and --duplicate option at the same time.");
             } else {
                 $this->checkForDuplicateEntries($outputInterface, $project);

@@ -36,12 +36,9 @@ class ConfigParser {
 
     public function getProjectParams($project) {
         $projectParams = "";
-        $projects = $this->getProjects();
-        foreach ($projects as $main) {
-            foreach ($main as $projectName => $params) {
-                if ($projectName == $project) {
-                    $projectParams = $params;
-                }
+        foreach ($this->configYml as $projectName => $configurations) {
+            if ($project == $projectName) {
+                $projectParams = $configurations;
             }
         }
 
