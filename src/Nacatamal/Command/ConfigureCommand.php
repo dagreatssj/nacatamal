@@ -185,6 +185,8 @@ class ConfigureCommand extends Command {
             $deployToSendPkgToDir = $helper->ask($inputInterface, $outputInterface, $deployToSendPkgToDirQuestion);
             if ($deployToSendPkgToDir == null) {
                 $envParams[$environmentName]['send_packages_to_dir'] = "/tmp";
+            } else {
+                $envParams[$environmentName]['send_packages_to_dir'] = $deployToSendPkgToDir;
             }
 
 
