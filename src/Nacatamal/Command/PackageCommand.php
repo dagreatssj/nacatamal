@@ -118,7 +118,7 @@ class PackageCommand extends Command {
                 system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");\
                 system("cd $projectRepoDir && mv {$tarballName}.tar $storedPackagesDir");
 
-                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar.gz</info>");
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");
