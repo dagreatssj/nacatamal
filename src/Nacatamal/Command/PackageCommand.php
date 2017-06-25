@@ -10,6 +10,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class PackageCommand extends Command {
+    private $nctmlRepoPrefix = "nctmlRepo_";
+
     public function configure() {
         $defs = array(
             new InputOption(
@@ -68,12 +70,12 @@ class PackageCommand extends Command {
             // params for project
             $location = $projectParams["location"];
             $jenkins = preg_match('/git/', $location, $matches);
-            $saveReleasesDir = $nacatamalInternals->getStorePackagesDir();
+            $storedPackagesDir = $nacatamalInternals->getStorePackagesDir($configParser, $project);
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
-            $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
+            $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir($configParser, $project);
 
-            $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
+            $projectRepoDir = "{$localSavedRepositoryDir}/{$this->nctmlRepoPrefix}{$project}";
             $projectRepoGitDir = $projectRepoDir . "/{$project}";
 
             if ($jenkins == 1) {
@@ -96,7 +98,7 @@ class PackageCommand extends Command {
             system("cd {$projectRepoGitDir} && git log -1");
             $commitNumber = exec("cd {$projectRepoGitDir} && git log --pretty=format:\"%h\" -1");
 
-            $packageList = $nacatamalInternals->getPackageCandidates($saveReleasesDir);
+            $packageList = $nacatamalInternals->getPackageCandidates($storedPackagesDir);
             $ifExists = $this->checkForExistingPackages($packageList, $commitNumber);
             if ($ifExists == false) {
                 if ($runPrePackageCommand == true) {
@@ -114,9 +116,9 @@ class PackageCommand extends Command {
                 }
                 system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");
                 system("cd $projectRepoDir && gzip {$tarballName}.tar");
-                system("cd $projectRepoDir && mv {$tarballName}.tar.gz $saveReleasesDir");
+                system("cd $projectRepoDir && mv {$tarballName}.tar.gz $storedPackagesDir");
 
-                $outputInterface->writeln("<info>\nRelease Candidate created in {$saveReleasesDir}/{$tarballName}.tar.gz</info>");
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir}/{$tarballName}.tar.gz</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");
@@ -157,7 +159,7 @@ class PackageCommand extends Command {
         $i = 0;
         foreach ($projectNames as $pn) {
             $outputInterface->writeln("<info>$pn</info>");
-            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir();
+            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir($configParser, $pn);
 
             $collectedFiles = array();
             if ($handle = opendir($directoryOfReleases)) {
@@ -185,7 +187,7 @@ class PackageCommand extends Command {
         if ($handle = opendir($lookFor)) {
             while (false !== ($dir = readdir($handle))) {
                 if ($dir != "." && $dir != "..") {
-                    if ($dir == "for_{$projectName}") {
+                    if ($dir == "{{$this->nctmlRepoPrefix}}{$projectName}") {
                         $cloneRepoExists = true;
                     }
                 }
@@ -227,19 +229,20 @@ class PackageCommand extends Command {
 
         if (count($packagesStored) > (int)$packageStoreNumber) {
             $outputInterface->writeln("<comment>\nStored packages capacity of {$packageStoreNumber} has been reached, deleting earliest tarball {$packagesStored[0]}\n</comment>");
-            unlink("{$nacatamalInternals->getStorePackagesDir()}/{$packagesStored[0]}");
+            unlink("{$nacatamalInternals->getStorePackagesDir($configParser, $projectName)}/{$packagesStored[0]}");
         }
     }
 
-    private function checkForExistingPackages($builds, $commitNumber) {
-        foreach ($builds as $b) {
-            $getCommitInPackage = explode("_", $b);
-            $removeTarExtension = explode(".", $getCommitInPackage[2]);
-            if ($commitNumber == $removeTarExtension[0]) {
-                return true;
+    private function checkForExistingPackages($packagesInDir, $commitNumber) {
+        if (!empty($packagesInDir)) {
+            foreach ($packagesInDir as $pkg) {
+                $getCommitInPackage = explode("_", $pkg);
+                $removeTarExtension = explode(".", $getCommitInPackage[2]);
+                if ($commitNumber == $removeTarExtension[0]) {
+                    return true;
+                }
             }
         }
-
         return false;
     }
 }

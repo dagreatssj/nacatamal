@@ -129,6 +129,18 @@ class ConfigureCommand extends Command {
                     $postDeployScriptCmd = "";
                 }
 
+                $internalsChangeDirToStorePkgQuestion = new Question("Enter directory where you'd like to store packages: ");
+                $internalsChangeDirToStorePkg = $helper->ask($inputInterface, $outputInterface, $internalsChangeDirToStorePkgQuestion);
+                if ($internalsChangeDirToStorePkg == null) {
+                    $internalsChangeDirToStorePkg = "";
+                }
+
+                $internalsChangeSaveRepoDirQuestion = new Question("Enter directory where you'd like to save project repository to: ");
+                $internalsChangeSaveRepoDir = $helper->ask($inputInterface, $outputInterface, $internalsChangeSaveRepoDirQuestion);
+                if ($internalsChangeSaveRepoDir == null) {
+                    $internalsChangeSaveRepoDir = "";
+                }
+
                 $projectsYamlParams['location'] = $location;
                 $projectsYamlParams['origin_name'] = $originName;
                 $projectsYamlParams['branch'] = $branch;
@@ -137,6 +149,8 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['ignore']['always'] = $alwaysList;
                 $projectsYamlParams['runtime_scripts']['pre_package'] = $prepackageScriptCmd;
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = $postDeployScriptCmd;
+                $projectsYamlParams['internals']['location_to_store_packages'] = $internalsChangeDirToStorePkg;
+                $projectsYamlParams['internals']['save_for_later_repositories'] = $internalsChangeSaveRepoDir;
                 $this->createProjectsYamlFile($project, $projectsYamlParams);
             }
         }

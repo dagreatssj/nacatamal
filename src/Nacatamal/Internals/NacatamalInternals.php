@@ -16,18 +16,24 @@ class NacatamalInternals {
         $this->logsDir = $nacatamalHome . "/internals/logs";
     }
 
-    /**
-     * @return string
-     */
-    public function getStoreGitRepositoryDir() {
-        return $this->storeGitRepositoryDir;
+    public function getStoreGitRepositoryDir(ConfigParser $configParser, $project) {
+        $projectYml = $configParser->getProjectParams($project);
+        $projectInteralsSection = $projectYml['internals']['save_for_later_repositories'];
+        if ($projectInteralsSection != null || !empty($projectInteralsSection)) {
+            return $projectInteralsSection;
+        } else {
+            return $this->storeGitRepositoryDir;
+        }
     }
 
-    /**
-     * @return string
-     */
-    public function getStorePackagesDir() {
-        return $this->storePackagesDir;
+    public function getStorePackagesDir(ConfigParser $configParser, $project) {
+        $projectYml = $configParser->getProjectParams($project);
+        $projectInteralsSection = $projectYml['internals']['location_to_store_packages'];
+        if ($projectInteralsSection != null || !empty($projectInteralsSection)) {
+            return $projectInteralsSection;
+        } else {
+            return $this->storePackagesDir;
+        }
     }
 
     public function getBuildCountFileNumber($projectName) {
@@ -76,17 +82,24 @@ class NacatamalInternals {
     }
 
     public function getPackageCandidates($saveReleasesDir) {
-        $builds = array();
+        $packages = array();
 
         if ($handle = opendir($saveReleasesDir)) {
             while (false !== ($entry = readdir($handle))) {
                 if ($entry != "." && $entry != "..") {
-                    array_push($builds, $entry);
+                    $tarFileExt = preg_match("/.tar.gz/", $entry, $matches);
+                    if ($tarFileExt == 1) {
+                        array_push($packages, $entry);
+                    }
                 }
             }
         }
 
-        return $builds;
+        if (count($packages) == 0) {
+            return "";
+        } else {
+            return $packages;
+        }
     }
 
     public function getLatestReleaseCandidatePackaged($saveReleasesDir) {
