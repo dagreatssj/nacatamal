@@ -109,7 +109,8 @@ class PackageCommand extends Command {
                 $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
 
                 if ($jenkins == 0) {
-                    $projectGitRepositoryDirName = "workspace";
+                    $jenkinsWorkspaceProjectName = explode("/", $location);
+                    $projectGitRepositoryDirName = end($jenkinsWorkspaceProjectName);
                 } else {
                     $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
                     $projectGitRepositoryDirName = current($inDir);
@@ -118,7 +119,7 @@ class PackageCommand extends Command {
                 system("cd $projectRepoDir && gzip {$tarballName}.tar");
                 system("cd $projectRepoDir && mv {$tarballName}.tar.gz $storedPackagesDir");
 
-                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir}/{$tarballName}.tar.gz</info>");
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar.gz</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");
