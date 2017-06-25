@@ -115,9 +115,8 @@ class PackageCommand extends Command {
                     $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
                     $projectGitRepositoryDirName = current($inDir);
                 }
-                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");
-                system("cd $projectRepoDir && gzip {$tarballName}.tar");
-                system("cd $projectRepoDir && mv {$tarballName}.tar.gz $storedPackagesDir");
+                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");\
+                system("cd $projectRepoDir && mv {$tarballName}.tar $storedPackagesDir");
 
                 $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar.gz</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
