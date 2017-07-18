@@ -98,7 +98,7 @@ class PackageCommand extends Command {
             system("cd {$projectRepoGitDir} && git log -1");
             $commitNumber = exec("cd {$projectRepoGitDir} && git log --pretty=format:\"%h\" -1");
 
-            $packageList = $nacatamalInternals->getPackageCandidates($storedPackagesDir);
+            $packageList = $nacatamalInternals->getPackageCandidates($storedPackagesDir, $project);
             $ifExists = $this->checkForExistingPackages($packageList, $commitNumber);
             if ($ifExists == false) {
                 if ($runPrePackageCommand == true) {

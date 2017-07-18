@@ -81,13 +81,13 @@ class NacatamalInternals {
         return $files;
     }
 
-    public function getPackageCandidates($saveReleasesDir) {
+    public function getPackageCandidates($saveReleasesDir, $project) {
         $packages = array();
 
         if ($handle = opendir($saveReleasesDir)) {
             while (false !== ($entry = readdir($handle))) {
                 if ($entry != "." && $entry != "..") {
-                    $tarFileExt = preg_match("/.tar/", $entry, $matches);
+                    $tarFileExt = preg_match("/{$project}*.tar/", $entry, $matches);
                     if ($tarFileExt == 1) {
                         array_push($packages, $entry);
                     }
