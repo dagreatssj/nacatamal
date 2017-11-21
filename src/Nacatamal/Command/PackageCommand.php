@@ -76,7 +76,7 @@ class PackageCommand extends Command {
             $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir($configParser, $project);
 
             $projectRepoDir = "{$localSavedRepositoryDir}/{$this->nctmlRepoPrefix}{$project}";
-            $projectRepoGitDir = $projectRepoDir . "/{$project}";
+            $projectRepoGitDir = $projectRepoDir;
 
             if ($jenkins == 1) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
@@ -84,7 +84,7 @@ class PackageCommand extends Command {
                 if ($check == false) {
                     $outputInterface->writeln("No repository found, cloning latest...");
                     system("mkdir -p $projectRepoDir");
-                    system("cd $projectRepoDir && git clone $location $project");
+                    system("git clone $location $projectRepoDir");
                 } else {
                     $outputInterface->writeln("updating repository to latest changes");
                     system("cd {$projectRepoDir} && git pull {$originName} ${branch}");
@@ -115,7 +115,7 @@ class PackageCommand extends Command {
                     $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
                     $projectGitRepositoryDirName = current($inDir);
                 }
-                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");\
+                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");
                 system("cd $projectRepoDir && mv {$tarballName}.tar $storedPackagesDir");
 
                 $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar</info>");
@@ -150,21 +150,28 @@ class PackageCommand extends Command {
         }
     }
 
+    /**
+     * Prints out all of the tarballs created
+     * @param OutputInterface $outputInterface
+     * @param ConfigParser $configParser
+     * @param NacatamalInternals $nacatamalInternals
+     */
     private function listAll(OutputInterface $outputInterface,
                              ConfigParser $configParser,
                              NacatamalInternals $nacatamalInternals) {
-        $outputInterface->writeln("<comment>\nListing all project's release candidates (tarballs)\n</comment>");
+        $outputInterface->writeln("<comment>\nListing all project's release candidates (tarballs)</comment>");
         $projectNames = $configParser->getListOfProjects();
 
         $i = 0;
-        foreach ($projectNames as $pn) {
-            $outputInterface->writeln("<info>$pn</info>");
-            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir($configParser, $pn);
+        foreach ($projectNames as $projectName) {
+            $outputInterface->writeln("\n<info>$projectName</info>");
+            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir($configParser, $projectName);
 
             $collectedFiles = array();
+            $savedRepoDir = "{$this->nctmlRepoPrefix}{$projectName}";
             if ($handle = opendir($directoryOfReleases)) {
                 while (false !== ($entry = readdir($handle))) {
-                    if ($entry != "." && $entry != "..") {
+                    if ($entry != "." && $entry != ".." && $entry != $savedRepoDir) {
                         array_push($collectedFiles, $entry);
                     }
                 }
@@ -173,7 +180,7 @@ class PackageCommand extends Command {
             $collectedFiles = $nacatamalInternals->sortByNewest($collectedFiles);
             $collectedFiles = array_reverse($collectedFiles);
             foreach ($collectedFiles as $key => $file) {
-                if (strpos($file, $pn) !== false) {
+                if (strpos($file, $projectName) !== false) {
                     $outputInterface->writeln("-- {$file}");
                 }
             }
@@ -181,13 +188,20 @@ class PackageCommand extends Command {
         }
     }
 
+    /**
+     * check to see if nctmlRepo_{project} folder exists
+     * @param $lookFor
+     * @param $projectName
+     * @return bool
+     */
     private function checkForExistingClonedRepository($lookFor, $projectName) {
         $cloneRepoExists = false;
+        $nacatamalRepositoryDir = "{$this->nctmlRepoPrefix}{$projectName}";
 
         if ($handle = opendir($lookFor)) {
             while (false !== ($dir = readdir($handle))) {
                 if ($dir != "." && $dir != "..") {
-                    if ($dir == "{{$this->nctmlRepoPrefix}}{$projectName}") {
+                    if ($dir == $nacatamalRepositoryDir) {
                         $cloneRepoExists = true;
                     }
                 }
@@ -197,6 +211,12 @@ class PackageCommand extends Command {
         return $cloneRepoExists;
     }
 
+    /**
+     * Looks through configuration file to see if project has been listed
+     * @param ConfigParser $configParser
+     * @param $paramGiven
+     * @return bool
+     */
     private function doesProjectExist(ConfigParser $configParser, $paramGiven) {
         $projectExistance = false;
         $projects = $configParser->getListOfProjects();
@@ -210,6 +230,11 @@ class PackageCommand extends Command {
         return $projectExistance;
     }
 
+    /**
+     * Simple exclude string append
+     * @param $ignoreFiles
+     * @return string
+     */
     private function excludeTheseFiles($ignoreFiles) {
         $excludeString = "";
 
@@ -220,6 +245,13 @@ class PackageCommand extends Command {
         return $excludeString;
     }
 
+    /**
+     * Given a project check to see if it's under the allowed packages to keep, if not then delete the oldest one.
+     * @param NacatamalInternals $nacatamalInternals
+     * @param ConfigParser $configParser
+     * @param OutputInterface $outputInterface
+     * @param $projectName
+     */
     private function cleanUpTarballs(NacatamalInternals $nacatamalInternals,
                                      ConfigParser $configParser,
                                      OutputInterface $outputInterface,
@@ -233,6 +265,12 @@ class PackageCommand extends Command {
         }
     }
 
+    /**
+     * Looks through the list of packages to see if the current one being created has already been created.
+     * @param $packagesInDir
+     * @param $commitNumber
+     * @return bool
+     */
     private function checkForExistingPackages($packagesInDir, $commitNumber) {
         if (!empty($packagesInDir)) {
             foreach ($packagesInDir as $pkg) {

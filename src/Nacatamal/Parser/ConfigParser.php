@@ -31,7 +31,6 @@ class ConfigParser {
                 $projectParams = $configurations;
             }
         }
-
         return $projectParams;
     }
 

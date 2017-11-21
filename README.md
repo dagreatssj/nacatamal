@@ -9,9 +9,14 @@ I needed and they didn't work for me. So I created this to make it simple, quick
 
 ## Requirements
 
-To use Nacatamal you have to have PHP (5.5.9)
+Nacatamal uses PHP (>= 5.5.9) as well as typical packages like git zip and tar.
 
 ## Installation
+
+Install packages (e.g. in Ubuntu)
+```
+$ sudo apt-get install -y git zip unzip tar curl php7.0 php7.0-zip
+```
 
 In the root directory, simply run the following:
 ```
@@ -25,13 +30,12 @@ Before packaging or deploying your projects, please take a look at how to create
 
 *   To package up your source code:
 
-        php nacatamal package --project=myproject
+        php nacatamal nacatamal:package --project=myproject
 
 *   To deploy the newest packaged code base to a server:
 
-        php nacatamal deploy --project=myproject --build=latest --server=prod
+        php nacatamal nacatamal:deploy --project=myproject --build=latest --server=prod
         
 ## Other stuff I am considering
 
 - add some logging information for debug
-- add a generator for the config file (similiar to Symfony's generators)

@@ -81,13 +81,19 @@ class NacatamalInternals {
         return $files;
     }
 
-    public function getPackageCandidates($saveReleasesDir, $project) {
+    /**
+     * Return an array list of the packages found in stored packages directory.
+     * @param $storedPackagesDir
+     * @param $project
+     * @return array
+     */
+    public function getPackageCandidates($storedPackagesDir, $project) {
         $packages = array();
 
-        if ($handle = opendir($saveReleasesDir)) {
+        if ($handle = opendir($storedPackagesDir)) {
             while (false !== ($entry = readdir($handle))) {
                 if ($entry != "." && $entry != "..") {
-                    $tarFileExt = preg_match("/{$project}*.tar/", $entry, $matches);
+                    $tarFileExt = preg_match("/{$project}_.*.tar/", $entry, $matches);
                     if ($tarFileExt == 1) {
                         array_push($packages, $entry);
                     }
@@ -95,15 +101,11 @@ class NacatamalInternals {
             }
         }
 
-        if (count($packages) == 0) {
-            return "";
-        } else {
-            return $packages;
-        }
+        return $packages;
     }
 
-    public function getLatestReleaseCandidatePackaged($saveReleasesDir) {
-        $builds = $this->getPackageCandidates($saveReleasesDir);
+    public function getLatestReleaseCandidatePackaged($storedPackagesDir) {
+        $builds = $this->getPackageCandidates($storedPackagesDir);
         $builds = $this->sortByNewest($builds);
         $latest = end($builds);
 
