@@ -15,7 +15,7 @@ Nacatamal uses PHP (>= 5.5.9) as well as typical packages like git zip and tar.
 
 Install packages (e.g. in Ubuntu)
 ```
-$ sudo apt-get install -y git zip unzip tar curl php7.0 php7.0-zip
+$ sudo apt-get install -y make git zip unzip tar curl php7.0 php7.0-zip
 ```
 
 In the root directory, simply run the following:
