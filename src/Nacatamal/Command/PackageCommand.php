@@ -28,6 +28,16 @@ class PackageCommand extends Command {
                 'include', 'i',
                 InputOption::VALUE_NONE,
                 "If set, exclude section will be included"
+            ),
+            new InputOption(
+                'zip-compress', 'z',
+                InputOption::VALUE_NONE,
+                "use zip compression"
+            ),
+            new InputOption(
+                'encrypt', 'e',
+                InputOption::VALUE_NONE,
+                "use password for zip compression"
             )
         );
 
@@ -43,6 +53,8 @@ class PackageCommand extends Command {
         $list = $inputInterface->getOption('list');
         $project = $inputInterface->getOption('project');
         $pass = $inputInterface->getOption('include');
+        $zipCompress = $inputInterface->getOption('zip-compress');
+        $encrypt = $inputInterface->getOption('encrypt');
         $excludePattern = "";
         $runPrePackageCommand = false;
 
@@ -58,7 +70,18 @@ class PackageCommand extends Command {
             $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
 
             if (!empty($ignoreFiles)) {
-                $excludePattern = $this->excludeTheseFiles($ignoreFiles);
+                $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $project);
+            }
+
+            if ($encrypt) {
+                $password = $configParser->getPassword($project);
+                if (!empty($password) || !is_null($password)) {
+                    $encryptString = "--password {$password} ";
+                } else {
+                    throw new \RuntimeException("<error>Password is empty, please enter a value in project.yml.</error>");
+                }
+            } else {
+                $encryptString = "";
             }
 
             $prePackageCmd = $configParser->getPrePackageParams($project);
@@ -112,13 +135,13 @@ class PackageCommand extends Command {
                     $jenkinsWorkspaceProjectName = explode("/", $location);
                     $projectGitRepositoryDirName = end($jenkinsWorkspaceProjectName);
                 } else {
-                    $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
-                    $projectGitRepositoryDirName = current($inDir);
+                    $projectGitRepositoryDirName = substr($projectRepoDir, strrpos($projectRepoDir, '/') + 1);
+                    $projectRepoDir = dirname($projectRepoDir);
                 }
-                system("cd $projectRepoDir && tar -cf {$tarballName}.tar {$projectGitRepositoryDirName} {$excludePattern}");
-                system("cd $projectRepoDir && mv {$tarballName}.tar $storedPackagesDir");
 
-                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}.tar</info>");
+                $this->createPackage($projectRepoDir, $tarballName, $projectGitRepositoryDirName, $excludePattern, $encryptString, $storedPackagesDir, $zipCompress);
+
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");
@@ -231,15 +254,27 @@ class PackageCommand extends Command {
     }
 
     /**
-     * Simple exclude string append
+     * Create the command line string to exclude files for tar and zip.
      * @param $ignoreFiles
+     * @param $zipCompress
+     * @param $project
      * @return string
      */
-    private function excludeTheseFiles($ignoreFiles) {
+    private function excludeTheseFiles($ignoreFiles, $zipCompress, $project) {
         $excludeString = "";
 
         foreach ($ignoreFiles as $f) {
-            $excludeString .= "--exclude={$f} ";
+            if (!empty($f)) {
+                if ($zipCompress) {
+                    $excludeString .= "{$this->nctmlRepoPrefix}{$project}/*{$f}* ";
+                } else {
+                    $excludeString .= "--exclude={$f} ";
+                }
+            }
+        }
+
+        if ($zipCompress) {
+            $excludeString = "-x " . $excludeString;
         }
 
         return $excludeString;
@@ -282,5 +317,32 @@ class PackageCommand extends Command {
             }
         }
         return false;
+    }
+
+    /**
+     * Use Linux Tar or Zip command to create a zip or tar file and move it to a directory.
+     * @param $projectRepoDir
+     * @param $compressedFilename
+     * @param $projectGitRepositoryDirName
+     * @param $excludePattern
+     * @param $encryptZipString
+     * @param $storedPackagesDir
+     * @param $zipCompression
+     */
+    private function createPackage($projectRepoDir,
+                                   $compressedFilename,
+                                   $projectGitRepositoryDirName,
+                                   $excludePattern,
+                                   $encryptZipString,
+                                   $storedPackagesDir,
+                                   $zipCompression) {
+        if ($zipCompression) {
+            system("cd $projectRepoDir && zip -r {$encryptZipString} {$compressedFilename}.zip {$projectGitRepositoryDirName} {$excludePattern}");
+            system("cd $projectRepoDir && mv {$compressedFilename}.zip $storedPackagesDir");
+        } else {
+            system("cd $projectRepoDir && tar -cf {$compressedFilename}.tar {$projectGitRepositoryDirName} {$excludePattern}");
+            system("cd $projectRepoDir && mv {$compressedFilename}.tar $storedPackagesDir");
+        }
+
     }
 }

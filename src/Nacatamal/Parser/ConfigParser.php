@@ -72,4 +72,8 @@ class ConfigParser {
     public function getDefaults() {
         return $this->internalsYml;
     }
+
+    public function getPassword($project) {
+        return $this->configYml[$project]['password'];
+    }
 }

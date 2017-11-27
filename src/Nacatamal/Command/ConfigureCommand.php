@@ -76,6 +76,9 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['ignore']['always'] = $alwaysList;
                 $projectsYamlParams['runtime_scripts']['pre_package'] = "";
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = "";
+                $projectsYamlParams['internals']['location_to_store_packages'] = "";
+                $projectsYamlParams['internals']['save_for_later_repositories'] = "";
+                $projectsYamlParams['password'] = "";
                 $this->createProjectsYamlFile($project, $projectsYamlParams);
             } else if (!empty($copyFrom) && empty($manual)) {
                 $this->checkForDuplicateEntries($outputInterface, $project);
@@ -151,6 +154,7 @@ class ConfigureCommand extends Command {
                 $projectsYamlParams['runtime_scripts']['post_deploy'] = $postDeployScriptCmd;
                 $projectsYamlParams['internals']['location_to_store_packages'] = $internalsChangeDirToStorePkg;
                 $projectsYamlParams['internals']['save_for_later_repositories'] = $internalsChangeSaveRepoDir;
+                $projectsYamlParams['password'] = "";
                 $this->createProjectsYamlFile($project, $projectsYamlParams);
             }
         }
