@@ -85,15 +85,21 @@ class NacatamalInternals {
      * Return an array list of the packages found in stored packages directory.
      * @param $storedPackagesDir
      * @param $project
+     * @param $zipCompress
      * @return array
      */
-    public function getPackageCandidates($storedPackagesDir, $project) {
+    public function getPackageCandidates($storedPackagesDir, $project, $zipCompress) {
         $packages = array();
+        $fileExt = "tar";
+
+        if ($zipCompress) {
+            $fileExt = "zip";
+        }
 
         if ($handle = opendir($storedPackagesDir)) {
             while (false !== ($entry = readdir($handle))) {
                 if ($entry != "." && $entry != "..") {
-                    $tarFileExt = preg_match("/{$project}_.*.tar/", $entry, $matches);
+                    $tarFileExt = preg_match("/{$project}_.*.{$fileExt}/", $entry, $matches);
                     if ($tarFileExt == 1) {
                         array_push($packages, $entry);
                     }
