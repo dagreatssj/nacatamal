@@ -69,10 +69,6 @@ class PackageCommand extends Command {
             $projectParams = $configParser->getProjectParams($project);
             $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
 
-            if (!empty($ignoreFiles)) {
-                $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $project);
-            }
-
             if ($encrypt) {
                 $password = $configParser->getPassword($project);
                 if (!empty($password) || !is_null($password)) {
@@ -137,6 +133,10 @@ class PackageCommand extends Command {
                 } else {
                     $projectGitRepositoryDirName = substr($projectRepoDir, strrpos($projectRepoDir, '/') + 1);
                     $projectRepoDir = dirname($projectRepoDir);
+                }
+
+                if (!empty($ignoreFiles)) {
+                    $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $projectGitRepositoryDirName);
                 }
 
                 $this->createPackage($projectRepoDir, $tarballName, $projectGitRepositoryDirName, $excludePattern, $encryptString, $storedPackagesDir, $zipCompress);
@@ -257,16 +257,16 @@ class PackageCommand extends Command {
      * Create the command line string to exclude files for tar and zip.
      * @param $ignoreFiles
      * @param $zipCompress
-     * @param $project
+     * @param $directoryName
      * @return string
      */
-    private function excludeTheseFiles($ignoreFiles, $zipCompress, $project) {
+    private function excludeTheseFiles($ignoreFiles, $zipCompress, $directoryName) {
         $excludeString = "";
 
         foreach ($ignoreFiles as $f) {
             if (!empty($f)) {
                 if ($zipCompress) {
-                    $excludeString .= "{$this->nctmlRepoPrefix}{$project}/*{$f}* ";
+                    $excludeString .= "{$directoryName}/*{$f}* ";
                 } else {
                     $excludeString .= "--exclude={$f} ";
                 }
