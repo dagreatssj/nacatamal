@@ -88,7 +88,11 @@ class PackageCommand extends Command {
 
             // params for project
             $location = $projectParams["location"];
-            $jenkins = preg_match('/git/', $location, $matches);
+            $jenkins = preg_match('/git/', $location, $matches); // preg_match returns 1 if pattern is matched
+            $jenkinsBuildNumberVar = getenv('BUILD_NUMBER');
+            if (!$jenkinsBuildNumberVar) {
+                $jenkins = 1; // better indicator, if Jenkins env variables are not injected then no Jenkins
+            }
             $storedPackagesDir = $nacatamalInternals->getStorePackagesDir($configParser, $project);
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
@@ -125,7 +129,7 @@ class PackageCommand extends Command {
                     system("cd {$projectRepoGitDir} && {$prePackageCmd}");
                 }
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
-                $tarballName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project) . "_{$commitNumber}";
+                $packageName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project, $jenkinsBuildNumberVar) . "_{$commitNumber}";
 
                 if ($jenkins == 0) {
                     $jenkinsWorkspaceProjectName = explode("/", $location);
@@ -139,9 +143,9 @@ class PackageCommand extends Command {
                     $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $projectGitRepositoryDirName);
                 }
 
-                $this->createPackage($projectRepoDir, $tarballName, $projectGitRepositoryDirName, $excludePattern, $encryptString, $storedPackagesDir, $zipCompress);
+                $this->createPackage($projectRepoDir, $packageName, $projectGitRepositoryDirName, $excludePattern, $encryptString, $storedPackagesDir, $zipCompress);
 
-                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$tarballName}</info>");
+                $outputInterface->writeln("<info>\nRelease Candidate created in {$storedPackagesDir} as {$packageName}</info>");
                 $this->cleanUpTarballs($nacatamalInternals, $configParser, $outputInterface, $project);
             } else {
                 throw new \RuntimeException("<error>{$commitNumber} is packaged and ready to be deployed.</error>");

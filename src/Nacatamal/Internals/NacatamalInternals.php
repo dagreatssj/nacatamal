@@ -36,15 +36,26 @@ class NacatamalInternals {
         }
     }
 
-    public function getBuildCountFileNumber($projectName) {
-        $buildCountFile = $this->logsDir . "/.{$projectName}_buildcount";
-        if (!file_exists($buildCountFile)) {
-            file_put_contents($buildCountFile, 1);
-            $buildNumber = 1;
+    /**
+     * Creates a file .projectname_buildcount that will keep count or updates the value. If Jenkins exists
+     * then it will simply use the BUILD_NUMBER environmental variable
+     * @param $projectName - name of the project
+     * @param $jenkinsBuildNumber - BUILD_NUMBER value
+     * @return string - transforms the number from 1 to 0001
+     */
+    public function getBuildCountFileNumber($projectName, $jenkinsBuildNumber) {
+        if ($jenkinsBuildNumber) {
+            $buildNumber = $jenkinsBuildNumber;
         } else {
-            $updatedBuildNumber = (int)file_get_contents($buildCountFile) + 1;
-            file_put_contents($buildCountFile, $updatedBuildNumber);
-            $buildNumber = $updatedBuildNumber;
+            $buildCountFile = $this->logsDir . "/.{$projectName}_buildcount";
+            if (!file_exists($buildCountFile)) {
+                file_put_contents($buildCountFile, 1);
+                $buildNumber = 1;
+            } else {
+                $updatedBuildNumber = (int)file_get_contents($buildCountFile) + 1;
+                file_put_contents($buildCountFile, $updatedBuildNumber);
+                $buildNumber = $updatedBuildNumber;
+            }
         }
 
         return str_pad($buildNumber, 4, '0', STR_PAD_LEFT);
