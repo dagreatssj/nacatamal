@@ -336,7 +336,7 @@ class PackageCommand extends Command {
                                    $storedPackagesDir,
                                    $zipCompression) {
         if ($zipCompression) {
-            system("cd $projectRepoDir && zip -r {$encryptZipString} {$compressedFilename}.zip {$projectGitRepositoryDirName} {$excludePattern}");
+            system("cd $projectRepoDir && zip -rq {$encryptZipString} {$compressedFilename}.zip {$projectGitRepositoryDirName} {$excludePattern}");
             system("cd $projectRepoDir && mv {$compressedFilename}.zip $storedPackagesDir");
         } else {
             system("cd $projectRepoDir && tar -cf {$compressedFilename}.tar {$projectGitRepositoryDirName} {$excludePattern}");
