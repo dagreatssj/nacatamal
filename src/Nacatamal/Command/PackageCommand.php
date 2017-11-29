@@ -67,7 +67,6 @@ class PackageCommand extends Command {
 
             $outputInterface->writeln("<info>Creating a tarball for project: $project...</info>");
             $projectParams = $configParser->getProjectParams($project);
-            $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
 
             if ($encrypt) {
                 $password = $configParser->getPassword($project);
@@ -139,8 +138,9 @@ class PackageCommand extends Command {
                     $projectRepoDir = dirname($projectRepoDir);
                 }
 
+                $ignoreFiles = $configParser->getIgnoreParams($project, $pass);
                 if (!empty($ignoreFiles)) {
-                    $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $projectGitRepositoryDirName);
+                    $excludePattern = $this->excludeTheseFiles($ignoreFiles, $zipCompress, $projectGitRepositoryDirName, $packageName);
                 }
 
                 $this->createPackage($projectRepoDir, $packageName, $projectGitRepositoryDirName, $excludePattern, $encryptString, $storedPackagesDir, $zipCompress);
@@ -262,10 +262,12 @@ class PackageCommand extends Command {
      * @param $ignoreFiles
      * @param $zipCompress
      * @param $directoryName
+     * @param $packageName
      * @return string
      */
-    private function excludeTheseFiles($ignoreFiles, $zipCompress, $directoryName) {
+    private function excludeTheseFiles($ignoreFiles, $zipCompress, $directoryName, $packageName) {
         $excludeString = "";
+        $directoryName = ($zipCompress ? $packageName : $directoryName);
 
         foreach ($ignoreFiles as $f) {
             if (!empty($f)) {
@@ -340,12 +342,14 @@ class PackageCommand extends Command {
                                    $storedPackagesDir,
                                    $zipCompression) {
         if ($zipCompression) {
-            system("cd $projectRepoDir && zip -rq {$encryptZipString} {$compressedFilename}.zip {$projectGitRepositoryDirName} {$excludePattern}");
+            // no --transform equivalent in zip so temporarily rename the folder to desired name
+            system("cd $projectRepoDir && mv $projectGitRepositoryDirName $compressedFilename");
+            system("cd $projectRepoDir && zip -rq {$encryptZipString} {$compressedFilename}.zip {$compressedFilename} {$excludePattern}");
+            system("cd $projectRepoDir && mv $compressedFilename $projectGitRepositoryDirName");
             system("cd $projectRepoDir && mv {$compressedFilename}.zip $storedPackagesDir");
         } else {
-            system("cd $projectRepoDir && tar -cf {$compressedFilename}.tar {$projectGitRepositoryDirName} {$excludePattern}");
+            system("cd $projectRepoDir && tar -cf {$compressedFilename}.tar {$projectGitRepositoryDirName} {$excludePattern} --transform='s/{$projectGitRepositoryDirName}/{$compressedFilename}/'");
             system("cd $projectRepoDir && mv {$compressedFilename}.tar $storedPackagesDir");
         }
-
     }
 }

@@ -146,7 +146,7 @@ class DeployCommand extends Command {
                 system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
                 $outputInterface->writeln("<info>Unpackaging...</info>");
                 system("ssh -p {$serverConfigurations["port"]} {$sshString} 'tar -zxvf {$sendReleasesDir}/{$buildString} -C {$sendReleasesDir}'");
-                system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
+                // system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
                 if ($runAPostScript == true) {
                     $outputInterface->writeln("<info>Running post deploy script {$runnerForScript} {$sendReleasesDir}/{$getName[0]}/{$scriptToRun}</info>");
                     system("ssh -t -t -p {$serverConfigurations["port"]} {$sshString} 'cd {$sendReleasesDir}/{$getName[0]} && {$runnerForScript} {$scriptToRun}'");
