@@ -45,27 +45,41 @@ class ConfigParser {
         }
     }
 
+    /**
+     * Get the server's user, ip, port and the directory path to send the package to
+     *
+     * @param $projectWanted
+     * @param $serverWanted
+     * @return mixed
+     */
     public function getDeployTo($projectWanted, $serverWanted) {
-        foreach ($this->configYml as $deployTo => $configurations) {
-            if ($deployTo == "deploy_to") {
-                foreach ($configurations as $projectName => $servers) {
-                    if ($projectName == $projectWanted) {
-                        foreach ($servers as $serverName => $serverParams) {
-                            if ($serverName == $serverWanted) {
-                                return $serverParams;
-                            }
-                        }
-                    }
-                }
+        foreach ($this->configYml as $projectName => $projectDeployToConf) {
+            if ($projectName == $projectWanted) {
+                return $projectDeployToConf['deploy_to'][$serverWanted];
             }
         }
+        return false;
     }
 
-    public function getPrePackageParams($project) {
+    /**
+     * Gets the command that needs to be executed before deploy.
+     * e.g. /tmp/script.sh param1 param2
+     *
+     * @param $project - name of the project in project.yml
+     * @return string - a string such as '/usr/bin/php /tmp/script.php'
+     */
+    public function getPrePackageRuntimeScript($project) {
         return $this->configYml[$project]['runtime_scripts']['pre_package'];
     }
 
-    public function getPostDeployParams($project) {
+    /**
+     * Gets the command that needs to be executed post deploy.
+     * e.g. /tmp/script.sh param1 param2
+     *
+     * @param $project - name of the project in project.yml
+     * @return mixed - a string such as '/usr/bin/php /tmp/script.php'
+     */
+    public function getPostDeployRuntimeScript($project) {
         return $this->configYml[$project]['runtime_scripts']['post_deploy'];
     }
 

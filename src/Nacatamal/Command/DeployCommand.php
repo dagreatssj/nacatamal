@@ -32,6 +32,16 @@ class DeployCommand extends Command {
                 'include', 'i',
                 InputOption::VALUE_NONE,
                 "If set, exclude section will be included"
+            ),
+            new InputOption(
+                'zip-compress', 'z',
+                InputOption::VALUE_NONE,
+                "use zip compression"
+            ),
+            new InputOption(
+                'encrypt', 'e',
+                InputOption::VALUE_NONE,
+                "use password for zip compression"
             )
         );
 
@@ -47,11 +57,12 @@ class DeployCommand extends Command {
         $project = $inputInterface->getOption('project');
         $build = $inputInterface->getOption('build');
         $server = $inputInterface->getOption('server');
-        $pass = $inputInterface->getOption('include');
-        $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir();
         $runAPostScript = false;
-        $projectParams = $configParser->getProjectParams($project);
-        $postDeployParams = $configParser->getPostDeployParams($project);
+
+        // Package commands
+        $include = $inputInterface->getOption('include');
+        $zipCompress = $inputInterface->getOption('zip-compress');
+        $encrypt = $inputInterface->getOption('encrypt');
 
         if (empty($project) && empty($build) && empty($server)) {
             throw new \RuntimeException("Set project, build and server arguments.");
@@ -62,36 +73,47 @@ class DeployCommand extends Command {
         } else if (empty($server)) {
             throw new \RuntimeException("Set the name of the server to deploy, defined in deploy_to");
         } else {
+            $projectParams = $configParser->getProjectParams($project);
+            $postDeployRuntimeScript = $configParser->getPostDeployRuntimeScript($project);
+
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
-            $jenkinsEnabled = $projectParams["jenkins"];
+            $jenkinsEnabled = getenv('BUILD_NUMBER');
 
-            if ($postDeployParams != null) {
-                $runnerForScript = $postDeployParams[$project]["runner"];
-                $scriptToRun = $postDeployParams[$project]["script"];
+            if ($postDeployRuntimeScript != null) {
                 $runAPostScript = true;
             }
 
-            $storedReleasesDir = $nacatamalInternals->getStorePackagesDir();
-            $sendReleasesDir = $projectParams["send_releases_to_dir"];
+            $storedPackgesDir = $nacatamalInternals->getStoredPackagesDir($configParser, $project);
             $serverConfigurations = $configParser->getDeployTo($project, $server);
-            $deploymentString =
-                $serverConfigurations["username"] . "@" . $serverConfigurations["server"] . ":" . $sendReleasesDir;
-            $sshString = $serverConfigurations["username"] . "@" . $serverConfigurations["server"];
+            $sendPackageToDir = $serverConfigurations["send_package_to_dir"];
+            $deploymentString = $serverConfigurations["user"] .
+                "@" . $serverConfigurations["ip"] .
+                ":" . $serverConfigurations["send_package_to_dir"];
+            $sshString = $serverConfigurations["user"] . "@" . $serverConfigurations["ip"];
 
+            // default port for ssh is 22
+            if ($serverConfigurations["port"] == null || empty($serverConfigurations["port"])) {
+                $serverConfigurations["port"] = "22";
+            }
+
+            /**
+             *  If --build=latest (-b latest) use package command and is not a Jenkins instance
+             *  Else use the --build={package_0001_123456}
+             */
             if ($build == "latest" && $jenkinsEnabled == false) {
-                $projectRepoDir = "{$localSavedRepositoryDir}/for_{$project}";
-                $inDir = array_diff(scandir($projectRepoDir), array('..', '.'));
-                $projectGitRepositoryDirName = current($inDir);
+                $projectGitRepositoryDirName = $nacatamalInternals->getNacatamalRepositoryDirPath($configParser, $project);
 
-                if (count($nacatamalInternals->getPackageCandidates($storedReleasesDir)) == 0) {
-                    $this->runPackageCommand($project, $outputInterface, $pass);
+                // check to see if there is any packages
+                if (count($nacatamalInternals->getPackageCandidates($storedPackgesDir, $project, $zipCompress)) == 0) {
+                    $this->runPackageCommand($project, $outputInterface, $include, $zipCompress, $encrypt);
                 }
-                $commitNumber = exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
-                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($storedReleasesDir);
 
+                $commitNumber = exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
+                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($storedPackgesDir, $project, $zipCompress);
                 $getCommitInTar = explode("_", $latestBuildPackaged);
-                $commitInTar = $getCommitInTar[1];
+                $commitInTar = $getCommitInTar[2];
+
                 if ($commitInTar == $commitNumber) {
                     $outputInterface->writeln("<comment>Checking for a newer build...</comment>");
                     system("cd {$projectGitRepositoryDirName} && git pull {$originName} ${branch}");
@@ -99,19 +121,17 @@ class DeployCommand extends Command {
                         exec("cd {$projectGitRepositoryDirName} && git log --pretty=format:\"%h\" -1");
                     if ($commitInTar != $checkCommitNumberAgain) {
                         $outputInterface->writeln("<comment>Newer build found, packaging...</comment>");
-                        $this->runPackageCommand($project, $outputInterface, $pass);
+                        $this->runPackageCommand($project, $outputInterface, $include, $zipCompress, $encrypt);
                     }
                 }
 
-                $latestBuildPackaged = $nacatamalInternals->getLatestReleaseCandidatePackaged($storedReleasesDir);
-                $deployLatestBuild = $latestBuildPackaged;
-                $buildString = $deployLatestBuild;
+                $buildString = $latestBuildPackaged;
                 $outputInterface->writeln(
-                    "<comment>Deploying latest build " . $deployLatestBuild . " to server</comment>"
+                    "<comment>Deploying latest build " . $latestBuildPackaged . " to server</comment>"
                 );
-                $releaseDirectory = "{$storedReleasesDir}/{$deployLatestBuild}";
+                $releaseDirectory = "{$storedPackgesDir}/{$latestBuildPackaged}";
             } else {
-                $latestBuildPackaged = $nacatamalInternals->getPackageCandidates($storedReleasesDir);
+                $latestBuildPackaged = $nacatamalInternals->getPackageCandidates($storedPackgesDir, $project, $zipCompress);
 
                 foreach ($latestBuildPackaged as $b) {
                     preg_match("/_\d+_/", $b, $output);
@@ -126,7 +146,7 @@ class DeployCommand extends Command {
                 if (isset($deployThisBuild)) {
                     $buildString = $deployThisBuild;
                     $outputInterface->writeln("<comment>Deploying build " . $deployThisBuild . " to server</comment>");
-                    $releaseDirectory = "{$storedReleasesDir}/{$deployThisBuild}";
+                    $releaseDirectory = "{$storedPackgesDir}/{$deployThisBuild}";
                 } else {
                     throw new \RuntimeException("Build Not Found");
                 }
@@ -137,42 +157,59 @@ class DeployCommand extends Command {
                 $outputInterface,
                 $serverConfigurations["port"],
                 $sshString,
-                $sendReleasesDir,
+                $sendPackageToDir,
                 $buildString
             );
             if ($proceed) {
-                if ($jenkinsEnabled) $project = "workspace";
-                $outputInterface->writeln("Sending package to {$deploymentString}");
+                $outputInterface->writeln("\nSending package to {$deploymentString}");
                 system("scp -P {$serverConfigurations["port"]} {$releaseDirectory} {$deploymentString}");
+
                 $outputInterface->writeln("<info>Unpackaging...</info>");
-                system("ssh -p {$serverConfigurations["port"]} {$sshString} 'tar -zxvf {$sendReleasesDir}/{$buildString} -C {$sendReleasesDir}'");
-                // system("ssh -p {$serverConfigurations["port"]} {$sshString} 'mv {$sendReleasesDir}/{$project} {$sendReleasesDir}/{$getName[0]}'");
+                if ($zipCompress) {
+                    system("ssh -p {$serverConfigurations["port"]} {$sshString} 'unzip {$sendPackageToDir}/{$buildString} -d {$sendPackageToDir}'");
+                } else {
+                    system("ssh -p {$serverConfigurations["port"]} {$sshString} 'tar -xvf {$sendPackageToDir}/{$buildString} -C {$sendPackageToDir}'");
+                }
+
                 if ($runAPostScript == true) {
-                    $outputInterface->writeln("<info>Running post deploy script {$runnerForScript} {$sendReleasesDir}/{$getName[0]}/{$scriptToRun}</info>");
-                    system("ssh -t -t -p {$serverConfigurations["port"]} {$sshString} 'cd {$sendReleasesDir}/{$getName[0]} && {$runnerForScript} {$scriptToRun}'");
+                    $outputInterface->writeln("<info>Running post deploy script...</info>");
+                    system("ssh -t -t -p {$serverConfigurations["port"]} {$sshString} 'cd {$sendPackageToDir}/{$getName[0]} && {$postDeployRuntimeScript}'");
                 }
             }
         }
     }
 
-    private function proceedWithDeploy(OutputInterface $outputInterface, $port, $ssh, $releasesDir,
+    /**
+     * Checks the servers configurations
+     *
+     * @param OutputInterface $outputInterface
+     * @param $port - ssh port (default is 22)
+     * @param $ssh - ssh string, e.g. ubuntu@nacatamal.com
+     * @param $releasesDir - directory path found in send_package_to_dir
+     * @param $releasesCandidate - name of the package file created by nacatamal
+     * @return bool
+     */
+    private function proceedWithDeploy(OutputInterface $outputInterface,
+                                       $port,
+                                       $ssh,
+                                       $releasesDir,
                                        $releasesCandidate) {
         $getServerParam = explode("@", $ssh);
         $serverUrl = $getServerParam[1];
 
-        $outputInterface->writeln("<info>Checking server status...</info>");
+        $outputInterface->writeln("\n<info>Checking server status...</info>");
         exec("ping -c 5 {$serverUrl}", $output, $exitCode);
 
         if (!$exitCode) {
             $outputInterface->writeln("<info>Server is live and ready...</info>");
-            $outputInterface->writeln("<info>... Checking existance of {$releasesDir}.</info>");
+            $outputInterface->writeln("\n<comment>Checking existence of {$releasesDir}...</comment>");
             system("ssh -p {$port} {$ssh} 'if [ -d {$releasesDir} ]; then exit 2; fi;'", $dirExists);
             if ($dirExists) {
-                $outputInterface->writeln("<info>Directory {$releasesDir} exists.</info>");
-                $outputInterface->writeln("<info>Checking previously deployments...</info>");
+                $outputInterface->writeln("<info>Directory {$releasesDir} exists</info>");
+                $outputInterface->writeln("\n<info>Checking previously deployments...</info>");
                 system("ssh -p {$port} {$ssh} 'ls {$releasesDir}/{$releasesCandidate}'", $check);
                 if ($check) {
-                    $outputInterface->writeln("<info>{$releasesCandidate} is ready to deploy.</info>");
+                    $outputInterface->writeln("<comment>{$releasesCandidate} is ready to deploy.</comment>");
                     return true;
                 } else {
                     $outputInterface->writeln("<error>{$releasesCandidate} has already been uploaded.</error>");
@@ -181,23 +218,38 @@ class DeployCommand extends Command {
             } else {
                 $outputInterface->writeln("<info>Creating directory to send release candidate: {$releasesDir}</info>");
                 system("ssh -p {$port} {$ssh} 'if [ ! -d {$releasesDir} ]; then mkdir -p {$releasesDir}; fi;'",
-                       $exitCode);
+                    $exitCode);
                 return true;
             }
         } else {
-            return false;
+            throw new \RuntimeException("Server is not responding or is configured incorrectly. Check projects.yml deploy_to.");
         }
     }
 
-    private function runPackageCommand($project, OutputInterface $outputInterface, $passParam) {
-        $packageCommand = $this->getApplication()->find('package');
+    /**
+     * Runs nacatamal:package command
+     *
+     * @param $project
+     * @param OutputInterface $outputInterface
+     * @param $include
+     * @param $zipCompress
+     * @param $encrypt
+     */
+    private function runPackageCommand($project, OutputInterface $outputInterface, $include, $zipCompress, $encrypt) {
+        $packageCommand = $this->getApplication()->find('nacatamal:package');
         $arguments = array(
-            'command' => 'package',
+            'command' => 'nacatamal:package',
             '--project' => "{$project}"
         );
 
-        if ($passParam) {
+        if ($include) {
             $arguments = array_merge($arguments, array("--pass" => true));
+        }
+        if ($zipCompress) {
+            $arguments = array_merge($arguments, array("--zip-compress" => true));
+        }
+        if ($encrypt) {
+            $arguments = array_merge($arguments, array("--encrypt" => true));
         }
         $packageInput = new ArrayInput($arguments);
         $packageCommand->run($packageInput, $outputInterface);

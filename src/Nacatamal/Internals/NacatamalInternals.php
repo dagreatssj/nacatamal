@@ -8,6 +8,7 @@ class NacatamalInternals {
     private $storePackagesDir;
     private $storeGitRepositoryDir;
     private $logsDir;
+    private $nctmlRepoPrefix = "nctmlRepo_";
 
     public function __construct() {
         $nacatamalHome = dirname(dirname(dirname(__DIR__)));
@@ -16,7 +17,14 @@ class NacatamalInternals {
         $this->logsDir = $nacatamalHome . "/internals/logs";
     }
 
-    public function getStoreGitRepositoryDir(ConfigParser $configParser, $project) {
+    /**
+     * Gets the directory path of the git repositories cloned by Nacatamal
+     *
+     * @param ConfigParser $configParser
+     * @param $project
+     * @return string
+     */
+    public function getStoredGitRepositoryDir(ConfigParser $configParser, $project) {
         $projectYml = $configParser->getProjectParams($project);
         $projectInteralsSection = $projectYml['internals']['save_for_later_repositories'];
         if ($projectInteralsSection != null || !empty($projectInteralsSection)) {
@@ -26,7 +34,14 @@ class NacatamalInternals {
         }
     }
 
-    public function getStorePackagesDir(ConfigParser $configParser, $project) {
+    /**
+     * Get the directory path of stored packages created by Nacatamal
+     *
+     * @param ConfigParser $configParser
+     * @param $project
+     * @return string
+     */
+    public function getStoredPackagesDir(ConfigParser $configParser, $project) {
         $projectYml = $configParser->getProjectParams($project);
         $projectInteralsSection = $projectYml['internals']['location_to_store_packages'];
         if ($projectInteralsSection != null || !empty($projectInteralsSection)) {
@@ -121,11 +136,32 @@ class NacatamalInternals {
         return $packages;
     }
 
-    public function getLatestReleaseCandidatePackaged($storedPackagesDir) {
-        $builds = $this->getPackageCandidates($storedPackagesDir);
+    public function getLatestReleaseCandidatePackaged($storedPackagesDir, $project, $zipCompress) {
+        $builds = $this->getPackageCandidates($storedPackagesDir, $project, $zipCompress);
         $builds = $this->sortByNewest($builds);
         $latest = end($builds);
 
         return $latest;
+    }
+
+    /**
+     * Returns nctmlRepo_project string
+     *
+     * @param $projectName - name to use
+     * @return string - nctmlRepo_{$projectName}
+     */
+    public function getNacatamalRepoName($projectName) {
+        return "{$this->nctmlRepoPrefix}{$projectName}";
+    }
+
+    /**
+     * Returns directory path string for the Nacatamal git repo
+     *
+     * @param ConfigParser $configParser
+     * @param $projectName
+     * @return string
+     */
+    public function getNacatamalRepositoryDirPath(ConfigParser $configParser, $projectName) {
+        return "{$this->getStoredGitRepositoryDir($configParser, $projectName)}/{$this->getNacatamalRepoName($projectName)}";
     }
 } 

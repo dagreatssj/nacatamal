@@ -10,8 +10,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class PackageCommand extends Command {
-    private $nctmlRepoPrefix = "nctmlRepo_";
-
     public function configure() {
         $defs = array(
             new InputOption(
@@ -79,9 +77,9 @@ class PackageCommand extends Command {
                 $encryptString = "";
             }
 
-            $prePackageCmd = $configParser->getPrePackageParams($project);
+            $prePackageRuntimeScript = $configParser->getPrePackageRuntimeScript($project);
 
-            if (!empty($prePackageCmd)) {
+            if (!empty($prePackageRuntimeScript)) {
                 $runPrePackageCommand = true;
             }
 
@@ -92,17 +90,17 @@ class PackageCommand extends Command {
             if (!$jenkinsBuildNumberVar) {
                 $jenkins = 1; // better indicator, if Jenkins env variables are not injected then no Jenkins
             }
-            $storedPackagesDir = $nacatamalInternals->getStorePackagesDir($configParser, $project);
+            $storedPackagesDir = $nacatamalInternals->getStoredPackagesDir($configParser, $project);
             $originName = $projectParams["origin_name"];
             $branch = $projectParams["branch"];
-            $localSavedRepositoryDir = $nacatamalInternals->getStoreGitRepositoryDir($configParser, $project);
+            $localSavedRepositoryDir = $nacatamalInternals->getStoredGitRepositoryDir($configParser, $project);
 
-            $projectRepoDir = "{$localSavedRepositoryDir}/{$this->nctmlRepoPrefix}{$project}";
+            $projectRepoDir = $nacatamalInternals->getNacatamalRepositoryDirPath($configParser, $project);
             $projectRepoGitDir = $projectRepoDir;
 
             if ($jenkins == 1) {
                 $outputInterface->writeln("<comment>\nLooking for saved repository in $localSavedRepositoryDir</comment>");
-                $check = $this->checkForExistingClonedRepository($localSavedRepositoryDir, $project);
+                $check = $this->checkForExistingClonedRepository($nacatamalInternals, $localSavedRepositoryDir, $project);
                 if ($check == false) {
                     $outputInterface->writeln("No repository found, cloning latest...");
                     system("mkdir -p $projectRepoDir");
@@ -124,8 +122,8 @@ class PackageCommand extends Command {
             $ifExists = $this->checkForExistingPackages($packageList, $commitNumber);
             if ($ifExists == false) {
                 if ($runPrePackageCommand == true) {
-                    $outputInterface->writeln("<info>Running pre package script {$prePackageCmd}</info>");
-                    system("cd {$projectRepoGitDir} && {$prePackageCmd}");
+                    $outputInterface->writeln("<info>Running pre package script {$prePackageRuntimeScript}</info>");
+                    system("cd {$projectRepoGitDir} && {$prePackageRuntimeScript}");
                 }
                 $outputInterface->writeln("<comment>\nCreating tarball, please wait...</comment>");
                 $packageName = "{$project}_" . $nacatamalInternals->getBuildCountFileNumber($project, $jenkinsBuildNumberVar) . "_{$commitNumber}";
@@ -192,10 +190,10 @@ class PackageCommand extends Command {
         $i = 0;
         foreach ($projectNames as $projectName) {
             $outputInterface->writeln("\n<info>$projectName</info>");
-            $directoryOfReleases = $nacatamalInternals->getStorePackagesDir($configParser, $projectName);
+            $directoryOfReleases = $nacatamalInternals->getStoredPackagesDir($configParser, $projectName);
 
             $collectedFiles = array();
-            $savedRepoDir = "{$this->nctmlRepoPrefix}{$projectName}";
+            $savedRepoDir = $nacatamalInternals->getNacatamalRepoName($projectName);
             if ($handle = opendir($directoryOfReleases)) {
                 while (false !== ($entry = readdir($handle))) {
                     if ($entry != "." && $entry != ".." && $entry != $savedRepoDir) {
@@ -221,9 +219,9 @@ class PackageCommand extends Command {
      * @param $projectName
      * @return bool
      */
-    private function checkForExistingClonedRepository($lookFor, $projectName) {
+    private function checkForExistingClonedRepository(NacatamalInternals $nacatamalInternals, $lookFor, $projectName) {
         $cloneRepoExists = false;
-        $nacatamalRepositoryDir = "{$this->nctmlRepoPrefix}{$projectName}";
+        $nacatamalRepositoryDir = $nacatamalInternals->getNacatamalRepoName($projectName);
 
         if ($handle = opendir($lookFor)) {
             while (false !== ($dir = readdir($handle))) {
@@ -301,7 +299,7 @@ class PackageCommand extends Command {
 
         if (count($packagesStored) > (int)$packageStoreNumber) {
             $outputInterface->writeln("<comment>\nStored packages capacity of {$packageStoreNumber} has been reached, deleting earliest tarball {$packagesStored[0]}\n</comment>");
-            unlink("{$nacatamalInternals->getStorePackagesDir($configParser, $projectName)}/{$packagesStored[0]}");
+            unlink("{$nacatamalInternals->getStoredPackagesDir($configParser, $projectName)}/{$packagesStored[0]}");
         }
     }
 
