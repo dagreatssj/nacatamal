@@ -191,15 +191,18 @@ class PackageCommand extends Command {
         foreach ($projectNames as $projectName) {
             $outputInterface->writeln("\n<info>$projectName</info>");
             $directoryOfReleases = $nacatamalInternals->getStoredPackagesDir($configParser, $projectName);
-
             $collectedFiles = array();
             $savedRepoDir = $nacatamalInternals->getNacatamalRepoName($projectName);
             if ($handle = opendir($directoryOfReleases)) {
                 while (false !== ($entry = readdir($handle))) {
-                    if ($entry != "." && $entry != ".." && $entry != $savedRepoDir) {
+                    if ($entry != "." && $entry != ".." &&
+                        $entry != $savedRepoDir &&
+                        !is_dir($directoryOfReleases . "/" . $entry)) {
                         array_push($collectedFiles, $entry);
                     }
                 }
+
+                closedir($handle);
             }
 
             $collectedFiles = $nacatamalInternals->sortByNewest($collectedFiles);
@@ -211,6 +214,7 @@ class PackageCommand extends Command {
             }
             $i++;
         }
+        $outputInterface->writeln("\n");
     }
 
     /**
