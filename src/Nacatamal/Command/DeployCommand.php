@@ -198,7 +198,7 @@ class DeployCommand extends Command {
         $serverUrl = $getServerParam[1];
 
         $outputInterface->writeln("\n<info>Checking server status...</info>");
-        exec("ssh -p {$port} {$serverUrl} 'ls'", $output, $exitCode);
+        exec("ssh -p {$port} {$ssh} 'ls'", $output, $exitCode);
 
         if (!$exitCode) {
             $outputInterface->writeln("<info>Server is live and ready...</info>");
